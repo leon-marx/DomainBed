@@ -18,7 +18,7 @@ except:
 from domainbed import networks
 from domainbed.lib.misc import (
     random_pairs_of_minibatches, ParamDict, MovingAverage, l2_between_dicts
-)^
+)
 
 # Own imports:
 from domainbed.lm.cvae import CVAE
