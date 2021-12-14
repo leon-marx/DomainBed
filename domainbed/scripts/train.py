@@ -48,6 +48,7 @@ if __name__ == "__main__":
         help="For domain adaptation, % of test to use unlabeled for training.")
     parser.add_argument('--skip_model_save', action='store_true')
     parser.add_argument('--save_model_every_checkpoint', action='store_true')
+    parser.add_argument('--gpus', type=str, default="4")
     args = parser.parse_args()
 
     # If we ever want to implement checkpointing, just persist these values
@@ -91,7 +92,7 @@ if __name__ == "__main__":
     torch.backends.cudnn.benchmark = False
 
     if torch.cuda.is_available():
-        device = "cuda"
+        device = "cuda:" + args.gpus
     else:
         device = "cpu"
 
