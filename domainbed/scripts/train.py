@@ -220,8 +220,16 @@ if __name__ == "__main__":
     last_results_keys = None
     for step in range(start_step, n_steps):
         step_start_time = time.time()
-        minibatches_device = [(x.to(device), y.to(device))
-                              for x, y in next(train_minibatches_iterator)]
+        if "LM" in args.dataset:
+            minibatches_device = []
+            for x, y in next(train_minibatches_iterator):
+                x["image"] = x["image"].to(device)
+                x["domain"] = x["domain"].to(device)
+                y = y.to(device)
+                minibatches_device.append((x, y))
+        else:
+            minibatches_device = [(x.to(device), y.to(device))
+                                for x, y in next(train_minibatches_iterator)]
         if args.task == "domain_adaptation":
             uda_device = [x.to(device)
                           for x, _ in next(uda_minibatches_iterator)]

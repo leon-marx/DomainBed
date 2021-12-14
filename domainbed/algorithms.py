@@ -21,7 +21,7 @@ from domainbed.lib.misc import (
 )
 
 # Own imports:
-from domainbed.lm.cvae import CVAE
+from domainbed.lm.cvae import LM_CVAE
 
 
 ALGORITHMS = [
@@ -1530,35 +1530,3 @@ class TRM(Algorithm):
 
     def eval(self):
         self.featurizer.eval()
-
-
-class LM_CVAE(Algorithm):
-    """
-    Own conditional variational autoencoder class.
-    """
-
-    def __init__(self, input_shape, num_classes, num_domains, hparams):
-        super(Algorithm, self).__init__()
-        self.hparams = hparams
-        self.cvae = CVAE(input_shape=input_shape,
-                         hidden_layer_sizes=self.hparams["hidden_layer_sizes"],
-                         num_domains=num_domains,
-                         ckpt_path=self.hparams["ckpt_path"])
-        self.optimizer = torch.optim.Adam(
-            self.cvae.parameters(),
-            lr=self.hparams["lr"],
-            weight_decay=self.hparams['weight_decay']
-        )
-
-    def update(self, minibatches, unlabeled=None):
-        batch = torch.cat([x for x, y in minibatches])
-        loss = self.cvae.training_step(batch=batch)
-
-        self.optimizer.zero_grad()
-        loss.backward()
-        self.optimizer.step()
-
-        return {'loss': loss.item()}
-
-    def predict(self, x):
-        self.cvae(x)

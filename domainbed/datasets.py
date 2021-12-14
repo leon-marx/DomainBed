@@ -14,6 +14,9 @@ from wilds.datasets.fmow_dataset import FMoWDataset
 
 ImageFile.LOAD_TRUNCATED_IMAGES = True
 
+# Own imports:
+from domainbed.lm.dataset import LM_PACS, LM_PACS_Debug
+
 DATASETS = [
     # Debug
     "Debug28",
@@ -24,6 +27,8 @@ DATASETS = [
     # Big images
     "VLCS",
     "PACS",
+    "LM_PACS",
+    "LM_PACS_Debug",
     "OfficeHome",
     "TerraIncognita",
     "DomainNet",
