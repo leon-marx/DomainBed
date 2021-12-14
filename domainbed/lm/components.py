@@ -7,7 +7,7 @@ class Encoder(nn.Module):
     def __init__(self, input_shape, hidden_layer_sizes, num_domains):
         super().__init__()
         self.flatten = nn.Flatten()
-        input_size = int(torch.prod(input_shape).item())
+        input_size = int(torch.prod(torch.Tensor(input_shape)).item())
         modules = []
         for i, out_size in enumerate(hidden_layer_sizes[:-1]):
             if i == 0:
@@ -35,7 +35,7 @@ class Encoder(nn.Module):
 class Decoder(nn.Module):
     def __init__(self, input_shape, hidden_layer_sizes, num_domains):
         super().__init__()
-        input_size = int(torch.prod(input_shape).item())
+        input_size = int(torch.prod(torch.Tensor(input_shape)).item())
         modules = []
         for i, in_size in enumerate(reversed(hidden_layer_sizes[1:])):
             out_size = hidden_layer_sizes[-i-2]

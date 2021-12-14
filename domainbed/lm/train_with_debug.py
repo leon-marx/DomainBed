@@ -9,7 +9,6 @@ bashCommand = 'python -m domainbed.scripts.train\
        --dataset PACS\
        --test_env 2\
        --hidden_layer_sizes "[2048,512,128]"\
-       --ckpt_path None\
        --gpus "2,3"\
        --output_dir ./../logs/DB_test/'
 process = subprocess.Popen(bashCommand.split(), stdout=subprocess.PIPE)
