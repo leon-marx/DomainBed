@@ -1,6 +1,6 @@
 import os
 import pytorch_lightning as pl
-from components import Encoder, Decoder, CvaeLoss
+from domainbed.lm.components import Encoder, Decoder, CvaeLoss
 import torch
 import torch.nn as nn
 from torch.distributions.multivariate_normal import MultivariateNormal
