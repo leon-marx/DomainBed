@@ -107,8 +107,8 @@ def _hparams(algorithm, dataset, random_seed, hidden_layer_sizes, ckpt_path):
         hparams['groupdro_eta'] = (1e-2, lambda r: 10 ** r.uniform(-3, -1))
 
     elif algorithm == "LM_CVAE":
-        hparams['hidden_layer_sizes'] = hidden_layer_sizes
-        hparams['ckpt_path'] = ckpt_path
+        hparams['hidden_layer_sizes'] = (hidden_layer_sizes, [128])
+        hparams['ckpt_path'] = (ckpt_path, None)
 
     # Dataset-and-algorithm-specific hparam definitions. Each block of code
     # below corresponds to exactly one hparam. Avoid nested conditionals.
