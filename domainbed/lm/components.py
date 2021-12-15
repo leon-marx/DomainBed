@@ -51,7 +51,7 @@ class Decoder(nn.Module):
         cond: one_hot vector of shape (batch_size, num_domains)
         """
         x = torch.cat((x, cond), dim=1)
-        pred = self.sequential(x).view(self.input_shape)
+        pred = self.sequential(x).view(-1, self.input_shape)
         return pred
 
 class CvaeLoss(nn.Module):

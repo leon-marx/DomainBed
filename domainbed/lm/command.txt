@@ -1,0 +1,18 @@
+python -m domainbed.scripts.train\
+       --data_dir=./../data/\
+       --algorithm LM_CVAE\
+       --dataset LM_PACS\
+       --test_env 2\
+       --hidden_layer_sizes "[2048,512,128]"\
+       --gpus 2\
+       --output_dir ./../logs/DB_test/
+
+
+python -m domainbed.scripts.train `
+       --data_dir=./../data/ `
+       --algorithm LM_CVAE `
+       --dataset LM_PACS_Debug`
+       --test_env 2 `
+       --hidden_layer_sizes "[16,8]" `
+       --gpus "0" `
+       --output_dir ./../logs/DB_test/
