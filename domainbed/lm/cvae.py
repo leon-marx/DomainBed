@@ -141,7 +141,7 @@ class LM_CVAE(Algorithm):
             print(f"Unexpected keys in state dict: {unexpected}")
 
 
-    def update(self, minibatches, unlabeled=None):
+    def update(self, minibatches, unlabeled=None, return_train_loss=False):
         loss = self.cvae.training_step(batch=[torch.cat([x["image"] for x, y in minibatches]), 
                                               torch.cat([x["domain"] for x, y in minibatches])])
 
@@ -149,7 +149,10 @@ class LM_CVAE(Algorithm):
         loss.backward()
         self.optimizer.step()
 
-        return {'loss': loss.item()}
+        if return_train_loss:
+            return {'loss': loss.item()}, loss.item()
+        else:
+            return {'loss': loss.item()}
 
     def predict(self, x):
         self.cvae(x)
