@@ -57,7 +57,7 @@ class CVAE(pl.LightningModule):
         return pred
 
     def training_step(self, batch):
-        imgs = batch[0].permute(0, 3, 1, 2)
+        imgs = batch[0]
         conds = nn.functional.one_hot(batch[1], num_classes=self.num_domains)
         conds = torch.stack((conds, conds), dim=2)
         predictions = self(imgs, conds)
@@ -65,7 +65,7 @@ class CVAE(pl.LightningModule):
         return loss
 
     def validation_step(self, batch):
-        imgs = batch[0].permute(0, 3, 1, 2)
+        imgs = batch[0]
         conds = nn.functional.one_hot(batch[1], num_classes=self.num_domains)
         conds = torch.stack((conds, conds), dim=2)
         predictions = self(imgs, conds)
