@@ -59,4 +59,4 @@ class CvaeLoss(nn.Module):
         super().__init__()
 
     def forward(self, predictions, labels):
-        return torch.sum(torch.abs(predictions - labels), dim=(1, 2, 3))
+        return torch.abs(predictions - labels).sum()
