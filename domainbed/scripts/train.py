@@ -220,7 +220,8 @@ if __name__ == "__main__":
         torch.save(save_dict, os.path.join(args.output_dir, filename))
 
     last_results_keys = None
-    for step in tqdm(range(start_step, n_steps)):
+    progress_bar = tqdm(range(start_step, n_steps))
+    for step in progress_bar:
         step_start_time = time.time()
         if "LM" in args.dataset:
             minibatches_device = []
@@ -285,6 +286,7 @@ if __name__ == "__main__":
 
             if args.save_model_every_checkpoint:
                 save_checkpoint(f'model_step{step}.pkl')
+            progress_bar.set_description(f"Loss: {results['loss']}")
 
     save_checkpoint('model.pkl')
 
