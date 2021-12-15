@@ -29,7 +29,7 @@ class CVAE(pl.LightningModule):
 
     def init_from_ckpt(self, ckpt_path, ignore_keys=list()):
         try:
-            sd = torch.load(ckpt_path, map_location="cpu")["state_dict"]
+            sd = torch.load(ckpt_path, map_location="cpu")["model_dict"]
         except KeyError:
             sd = torch.load(ckpt_path, map_location="cpu")
 

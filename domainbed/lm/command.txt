@@ -5,6 +5,9 @@ python -m domainbed.scripts.train\
        --test_env 2\
        --hidden_layer_sizes "[2048,512,128]"\
        --gpus 2\
+       --steps 1000000\
+       --checkpoint_freq 100000\
+       --ckpt_path ./../logs/DB_test/model.pkl
        --output_dir ./../logs/DB_test/
 
 
