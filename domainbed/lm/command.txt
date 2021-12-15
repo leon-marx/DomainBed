@@ -7,7 +7,7 @@ python -m domainbed.scripts.train\
        --gpus 2\
        --steps 1000000\
        --checkpoint_freq 100000\
-       --ckpt_path ./../logs/DB_test/model.pkl
+       --ckpt_path ./../logs/DB_test/model.pkl\
        --output_dir ./../logs/DB_test/
 
 

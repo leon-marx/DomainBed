@@ -113,13 +113,32 @@ class LM_CVAE(Algorithm):
         self.hparams = hparams
         self.cvae = CVAE(input_shape=input_shape,
                          hidden_layer_sizes=json.loads(self.hparams["hidden_layer_sizes"]),
-                         num_domains=num_domains,
-                         ckpt_path=self.hparams["ckpt_path"])
+                         num_domains=num_domains)
+        self.init_from_ckpt(self.hparams["chpt_path"])
         self.optimizer = torch.optim.Adam(
             self.cvae.parameters(),
             lr=self.hparams["lr"],
             weight_decay=self.hparams['weight_decay']
         )
+
+    def init_from_ckpt(self, ckpt_path, ignore_keys=list()):
+        try:
+            sd = torch.load(ckpt_path, map_location="cpu")["model_dict"]
+        except KeyError:
+            sd = torch.load(ckpt_path, map_location="cpu")
+
+        keys = list(sd.keys())
+        for k in keys:
+            for ik in ignore_keys:
+                if k.startswith(ik):
+                    print("Deleting key {} from state_dict.".format(k))
+                    del sd[k]
+        missing, unexpected = self.load_state_dict(sd, strict=False)
+        if len(missing) > 0:
+            print(f"Missing keys in state dict: {missing}")
+        if len(unexpected) > 0:
+            print(f"Unexpected keys in state dict: {unexpected}")
+
 
     def update(self, minibatches, unlabeled=None):
         loss = self.cvae.training_step(batch=[torch.cat([x["image"] for x, y in minibatches]), 
