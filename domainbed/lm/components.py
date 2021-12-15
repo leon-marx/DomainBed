@@ -29,7 +29,7 @@ class Encoder(nn.Module):
         x = torch.cat((x, cond), dim=1)
         h = self.sequential(x)
         loc = self.get_loc(h)
-        scale = torch.diag_embed(torch.exp(self.get_scale(h), dim1=-2, dim2=-1))
+        scale = torch.diag_embed(torch.exp(self.get_scale(h)), dim1=-2, dim2=-1)
         return loc, scale
 
 class Decoder(nn.Module):
@@ -53,7 +53,7 @@ class Decoder(nn.Module):
         x = torch.cat((x, cond), dim=1)
         h = self.sequential(x)
         loc = self.get_loc(h)
-        scale = torch.diag_embed(torch.exp(self.get_scale(h), dim1=-2, dim2=-1))
+        scale = torch.diag_embed(torch.exp(self.get_scale(h)), dim1=-2, dim2=-1)
         return loc, scale
 
 class CvaeLoss(nn.Module):
