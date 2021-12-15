@@ -70,8 +70,7 @@ class CVAE(pl.LightningModule):
         conds = torch.stack((conds, conds), dim=2)
         predictions = self(imgs, conds)
         loss = self.loss(predictions, imgs)
-        output = pl.EvalResult(checkpoint_on=loss)
-        return output
+        return loss
 
     def configure_optimizers(self):
         lr = self.learning_rate

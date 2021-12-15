@@ -19,6 +19,7 @@ from domainbed import datasets
 from domainbed import hparams_registry
 from domainbed import algorithms
 from domainbed.lib import misc
+from domainbed.lm import lm_misc
 from domainbed.lib.fast_data_loader import InfiniteDataLoader, FastDataLoader
 
 if __name__ == "__main__":
@@ -252,8 +253,10 @@ if __name__ == "__main__":
 
             evals = zip(eval_loader_names, eval_loaders, eval_weights)
             for name, loader, weights in evals:
-                print(name, loader, weights)
-                acc = misc.accuracy(algorithm, loader, weights, device)
+                if "LM" in args.algorithm:
+                    acc = lm_misc.accuracy(algorithm, loader, weights, device)
+                else:
+                    acc = misc.accuracy(algorithm, loader, weights, device)
                 results[name+'_acc'] = acc
 
             results['mem_gb'] = torch.cuda.max_memory_allocated() / \
