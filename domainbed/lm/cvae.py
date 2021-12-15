@@ -53,8 +53,7 @@ class CVAE(pl.LightningModule):
         """
         enc_loc, enc_scale = self.encoder(x, conds[:,:,0])
         z = MultivariateNormal(enc_loc, enc_scale).sample()
-        dec_loc, dec_scale = self.decoder(z, conds[:,:,1])
-        pred = MultivariateNormal(dec_loc, dec_scale).sample()
+        pred = self.decoder(z, conds[:,:,1])
         return pred
 
     def training_step(self, batch):

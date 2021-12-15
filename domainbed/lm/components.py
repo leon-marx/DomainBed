@@ -35,15 +35,15 @@ class Encoder(nn.Module):
 class Decoder(nn.Module):
     def __init__(self, input_shape, hidden_layer_sizes, num_domains):
         super().__init__()
+        self.input_shape = input_shape
         input_size = int(torch.prod(torch.Tensor(input_shape)).item())
         modules = []
         for i, in_size in enumerate(reversed(hidden_layer_sizes[1:])):
             out_size = hidden_layer_sizes[-i-2]
             modules.append(nn.Linear(in_size + num_domains, out_size + num_domains))
             modules.append(nn.ReLU())
+        modules.append(nn.Linear(hidden_layer_sizes[0] + num_domains, input_size))
         self.sequential = nn.Sequential(*modules)
-        self.get_loc = nn.Linear(hidden_layer_sizes[0] + num_domains, input_size)
-        self.get_scale = nn.Linear(hidden_layer_sizes[0] + num_domains, input_size)
 
     def forward(self, x, cond):
         """
@@ -51,10 +51,8 @@ class Decoder(nn.Module):
         cond: one_hot vector of shape (batch_size, num_domains)
         """
         x = torch.cat((x, cond), dim=1)
-        h = self.sequential(x)
-        loc = self.get_loc(h)
-        scale = torch.diag_embed(torch.exp(self.get_scale(h)), dim1=-2, dim2=-1)
-        return loc, scale
+        pred = self.sequential(x).view(self.input_shape)
+        return pred
 
 class CvaeLoss(nn.Module):
     def __init__(self):
