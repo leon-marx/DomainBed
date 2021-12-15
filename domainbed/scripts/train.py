@@ -286,7 +286,7 @@ if __name__ == "__main__":
 
             if args.save_model_every_checkpoint:
                 save_checkpoint(f'model_step{step}.pkl')
-            progress_bar.set_description("Loss: {:0.2f}".format(results["loss"]))
+        progress_bar.set_description("Loss: {:0.2f}".format(results["loss"]))
 
     save_checkpoint('model.pkl')
 
