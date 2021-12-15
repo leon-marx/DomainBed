@@ -14,6 +14,7 @@ import PIL
 import torch
 import torchvision
 import torch.utils.data
+from tqdm import tqdm
 
 from domainbed import datasets
 from domainbed import hparams_registry
@@ -219,7 +220,7 @@ if __name__ == "__main__":
         torch.save(save_dict, os.path.join(args.output_dir, filename))
 
     last_results_keys = None
-    for step in range(start_step, n_steps):
+    for step in tqdm(range(start_step, n_steps)):
         step_start_time = time.time()
         if "LM" in args.dataset:
             minibatches_device = []
