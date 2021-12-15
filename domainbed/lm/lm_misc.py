@@ -10,4 +10,4 @@ def accuracy(network, loader, weights, device):
             
     network.train()
 
-    return 1 / loss
+    return 1 / loss.item()
