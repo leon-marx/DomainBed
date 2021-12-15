@@ -147,6 +147,10 @@ def _hparams(algorithm, dataset, random_seed, hidden_layer_sizes, ckpt_path):
     elif algorithm in ['DANN', 'CDANN']:
         _hparam('weight_decay_g', 0., lambda r: 10**r.uniform(-6, -2))
 
+    if algorithm == "LM_CVAE":
+        hparams['batch_size'] = (16, 16)
+
+
     return hparams
 
 
