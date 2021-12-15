@@ -126,6 +126,10 @@ class LM_CVAE(Algorithm):
     def update(self, minibatches, unlabeled=None):
         loss = self.cvae.training_step(batch=[torch.cat([x["image"] for x, y in minibatches]), 
                                               torch.cat([x["domain"] for x, y in minibatches])])
+        print("Loss Info:")
+        print(loss.shape)
+        print(loss)
+
 
         self.optimizer.zero_grad()
         loss.backward()

@@ -59,6 +59,4 @@ class CvaeLoss(nn.Module):
         super().__init__()
 
     def forward(self, predictions, labels):
-        print("preds", predictions.shape)
-        print("labels", labels.shape)
         return torch.abs(predictions - labels)
