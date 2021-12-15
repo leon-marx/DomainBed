@@ -69,8 +69,7 @@ class CVAE(pl.LightningModule):
         conds = nn.functional.one_hot(batch[1], num_classes=self.num_domains)
         conds = torch.stack((conds, conds), dim=2)
         predictions = self(imgs, conds)
-        loss = self.loss(predictions, imgs)
-        return loss
+        return torch.abs(predictions - imgs).sum()
 
     def configure_optimizers(self):
         lr = self.learning_rate
