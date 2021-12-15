@@ -114,7 +114,7 @@ class LM_CVAE(Algorithm):
         self.cvae = CVAE(input_shape=input_shape,
                          hidden_layer_sizes=json.loads(self.hparams["hidden_layer_sizes"]),
                          num_domains=num_domains)
-        self.init_from_ckpt(self.hparams["chpt_path"])
+        self.init_from_ckpt(self.hparams["ckpt_path"])
         self.optimizer = torch.optim.Adam(
             self.cvae.parameters(),
             lr=self.hparams["lr"],
@@ -122,6 +122,7 @@ class LM_CVAE(Algorithm):
         )
 
     def init_from_ckpt(self, ckpt_path, ignore_keys=list()):
+        print(f"Loading model from {ckpt_path}")
         try:
             sd = torch.load(ckpt_path, map_location="cpu")["model_dict"]
         except KeyError:
