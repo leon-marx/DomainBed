@@ -67,7 +67,10 @@ class CVAE(pl.LightningModule):
     def validation_step(self, batch):
         batch[1] = nn.functional.one_hot(batch[1], num_classes=self.num_domains)
         batch[1] = torch.stack((batch[1], batch[1]), dim=2)
-        return torch.abs(self(batch[0], batch[1]) - batch[0]).sum()
+        batch[1] = self(batch[0], batch[1])
+        batch[1] = batch[1] - batch[0]
+        batch[1] = torch.abs(batch[1])
+        return batch[1].sum()
 
     def configure_optimizers(self):
         lr = self.learning_rate
