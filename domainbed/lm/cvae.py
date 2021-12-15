@@ -65,11 +65,9 @@ class CVAE(pl.LightningModule):
         return loss
 
     def validation_step(self, batch):
-        imgs = batch[0]
-        conds = nn.functional.one_hot(batch[1], num_classes=self.num_domains)
-        conds = torch.stack((conds, conds), dim=2)
-        predictions = self(imgs, conds)
-        return torch.abs(predictions - imgs).sum()
+        batch[1] = nn.functional.one_hot(batch[1], num_classes=self.num_domains)
+        batch[1] = torch.stack((batch[1], batch[1]), dim=2)
+        return torch.abs(self(batch[0], batch[1]) - batch[0]).sum()
 
     def configure_optimizers(self):
         lr = self.learning_rate
@@ -124,10 +122,6 @@ class LM_CVAE(Algorithm):
     def update(self, minibatches, unlabeled=None):
         loss = self.cvae.training_step(batch=[torch.cat([x["image"] for x, y in minibatches]), 
                                               torch.cat([x["domain"] for x, y in minibatches])])
-        print("Loss Info:")
-        print(loss.shape)
-        print(loss)
-
 
         self.optimizer.zero_grad()
         loss.backward()
