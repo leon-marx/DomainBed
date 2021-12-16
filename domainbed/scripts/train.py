@@ -54,6 +54,7 @@ if __name__ == "__main__":
     parser.add_argument('--hidden_sizes', type=str, default=None)
     parser.add_argument('--K', type=int, default=10)
     parser.add_argument('--ckpt_path', type=str, default=None)
+    parser.add_argument('--lr', type=float, default=None)
     args = parser.parse_args()
 
     # If we ever want to implement checkpointing, just persist these values
@@ -94,6 +95,9 @@ if __name__ == "__main__":
 
     if args.hparams:
         hparams.update(json.loads(args.hparams))
+
+    if args.lr is not None:
+        hparams['lr'] = args.lr
 
     print('HParams:')
     for k, v in sorted(hparams.items()):
