@@ -51,7 +51,8 @@ if __name__ == "__main__":
     parser.add_argument('--skip_model_save', action='store_true')
     parser.add_argument('--save_model_every_checkpoint', action='store_true')
     parser.add_argument('--gpus', type=str, default="4")
-    parser.add_argument('--hidden_layer_sizes', type=str, default=None)
+    parser.add_argument('--hidden_sizes', type=str, default=None)
+    parser.add_argument('--K', type=int, default=10)
     parser.add_argument('--ckpt_path', type=str, default=None)
     args = parser.parse_args()
 
@@ -76,7 +77,7 @@ if __name__ == "__main__":
     print('Args:')
     for k, v in sorted(vars(args).items()):
         print('\t{}: {}'.format(k, v))
-    if args.hidden_layer_sizes is None:
+    if args.hidden_sizes is None:
         if args.hparams_seed == 0:
             hparams = hparams_registry.default_hparams(
                 args.algorithm, args.dataset)
@@ -86,10 +87,10 @@ if __name__ == "__main__":
     else:
         if args.hparams_seed == 0:
             hparams = hparams_registry.default_hparams(
-                args.algorithm, args.dataset, hidden_layer_sizes=args.hidden_layer_sizes, ckpt_path=args.ckpt_path)
+                args.algorithm, args.dataset, hidden_sizes=args.hidden_sizes, K = args.K, ckpt_path=args.ckpt_path)
         else:
             hparams = hparams_registry.random_hparams(args.algorithm, args.dataset, misc.seed_hash(
-                args.hparams_seed, args.trial_seed), hidden_layer_sizes=args.hidden_layer_sizes, ckpt_path=args.ckpt_path)
+                args.hparams_seed, args.trial_seed), hidden_sizes=args.hidden_sizes, K = args.K, ckpt_path=args.ckpt_path)
 
     if args.hparams:
         hparams.update(json.loads(args.hparams))

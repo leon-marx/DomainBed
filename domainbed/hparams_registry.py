@@ -7,7 +7,7 @@ def _define_hparam(hparams, hparam_name, default_val, random_val_fn):
     hparams[hparam_name] = (hparams, hparam_name, default_val, random_val_fn)
 
 
-def _hparams(algorithm, dataset, random_seed, hidden_layer_sizes, ckpt_path):
+def _hparams(algorithm, dataset, random_seed, hidden_sizes, K, ckpt_path):
     """
     Global registry of hyperparams. Each entry is a (default, random) tuple.
     New algorithms / networks / etc. should add entries here.
@@ -107,7 +107,8 @@ def _hparams(algorithm, dataset, random_seed, hidden_layer_sizes, ckpt_path):
         hparams['groupdro_eta'] = (1e-2, lambda r: 10 ** r.uniform(-3, -1))
 
     elif algorithm == "LM_CVAE":
-        hparams['hidden_layer_sizes'] = (hidden_layer_sizes, [128])
+        hparams['hidden_sizes'] = (hidden_sizes, [128])
+        hparams['K'] = (K, 10)
         hparams['ckpt_path'] = (ckpt_path, None)
 
     # Dataset-and-algorithm-specific hparam definitions. Each block of code
@@ -154,9 +155,9 @@ def _hparams(algorithm, dataset, random_seed, hidden_layer_sizes, ckpt_path):
     return hparams
 
 
-def default_hparams(algorithm, dataset, hidden_layer_sizes=None, ckpt_path=None):
-    return {a: b for a, (b, c) in _hparams(algorithm, dataset, 0, hidden_layer_sizes, ckpt_path).items()}
+def default_hparams(algorithm, dataset, hidden_sizes=None, K=None, ckpt_path=None):
+    return {a: b for a, (b, c) in _hparams(algorithm, dataset, 0, hidden_sizes, K, ckpt_path).items()}
 
 
-def random_hparams(algorithm, dataset, seed, hidden_layer_sizes=None, ckpt_path=None):
-    return {a: c for a, (b, c) in _hparams(algorithm, dataset, seed, hidden_layer_sizes, ckpt_path).items()}
+def random_hparams(algorithm, dataset, seed, hidden_sizes=None, K=None, ckpt_path=None):
+    return {a: c for a, (b, c) in _hparams(algorithm, dataset, seed, hidden_sizes, K, ckpt_path).items()}

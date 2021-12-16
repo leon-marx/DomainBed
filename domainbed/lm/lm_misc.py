@@ -5,8 +5,13 @@ def accuracy(network, loader, weights, device):
 
     network.eval()
     with torch.no_grad():
-        loss += network.cvae.validation_step(batch=[torch.cat([x["image"].to(device) for x, y in loader]), 
-                                                    torch.cat([x["domain"].to(device) for x, y in loader])])
+        batch = []
+        for x, y in loader:
+            x["image"] = x["image"].to(device)
+            x["domain"] = x["domain"].to(device)
+            y = y.to(device)
+            batch.append(x, y)
+        loss += network.update(minibatches=batch)
             
     network.train()
 

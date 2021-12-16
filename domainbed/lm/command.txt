@@ -1,14 +1,15 @@
 python -m domainbed.scripts.train\
-       --data_dir=./../data/\
        --algorithm LM_CVAE\
-       --dataset LM_PACS\
-       --test_env 2\
        --hidden_layer_sizes "[1024,512,128]"\
+       --ckpt_path ./../logs/DB_test/old_model.pkl\
+       --dataset LM_PACS\
+       --data_dir=./../data/\
+       --output_dir ./../logs/DB_test/\
+       --test_env 2\
        --gpus 2\
        --steps 1000000\
        --checkpoint_freq 100000\
-       --ckpt_path ./../logs/DB_test/old_model.pkl\
-       --output_dir ./../logs/DB_test/
+       -- save_model_every_checkpoint
 
 
 python -m domainbed.scripts.train `
