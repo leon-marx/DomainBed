@@ -50,7 +50,7 @@ if __name__ == "__main__":
                         help="For domain adaptation, % of test to use unlabeled for training.")
     parser.add_argument('--skip_model_save', action='store_true')
     parser.add_argument('--save_model_every_checkpoint', action='store_true')
-    parser.add_argument('--gpus', type=str, default="4")
+    parser.add_argument('--gpu', type=str, default="4")
     parser.add_argument('--hidden_sizes', type=str, default=None)
     parser.add_argument('--K', type=int, default=10)
     parser.add_argument('--ckpt_path', type=str, default=None)
@@ -106,7 +106,7 @@ if __name__ == "__main__":
     torch.backends.cudnn.benchmark = False
 
     if torch.cuda.is_available():
-        device = "cuda:" + args.gpus
+        device = "cuda:" + args.gpu
     else:
         device = "cpu"
 

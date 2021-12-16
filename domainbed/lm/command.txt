@@ -6,7 +6,7 @@ python -m domainbed.scripts.train\
        --data_dir ./../data/\
        --output_dir ./../logs/DB_test/\
        --test_env 2\
-       --gpus 2\
+       --gpu 2\
        --steps 10000\
        --checkpoint_freq 2000\
        --save_model_every_checkpoint
