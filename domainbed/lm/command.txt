@@ -1,6 +1,6 @@
 python -m domainbed.scripts.train\
        --algorithm LM_CVAE\
-       --hidden_sizes "[2048,512,128]"\
+       --hidden_sizes "[1024,512,128]"\
        --K 25\
        --dataset LM_PACS\
        --data_dir ./../data/\
