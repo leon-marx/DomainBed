@@ -61,7 +61,8 @@ class LM_CVAE(Algorithm):
             weight_decay=self.hparams['weight_decay']
         )
 
-        self.init_from_ckpt(self.ckpt_path)
+        if self.ckpt_path is not None:
+            self.init_from_ckpt(self.ckpt_path)
 
 
     def update(self, minibatches, unlabeled=None, return_train_loss=False):
