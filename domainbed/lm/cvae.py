@@ -92,11 +92,10 @@ class LM_CVAE(Algorithm):
         loss.backward()
         self.optimizer.step()
 
-        train_loss = float(loss.item())
         if return_train_loss:
-            return {'loss': train_loss}, train_loss
+            return {'loss': loss.item()}, loss.item()
         else:
-            return {'loss': train_loss}
+            return {'loss': loss.item()}
 
     def evaluate(self, minibatches, unlabeled=None, return_eval_loss=False):
         """
