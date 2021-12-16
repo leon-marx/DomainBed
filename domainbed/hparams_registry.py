@@ -149,7 +149,7 @@ def _hparams(algorithm, dataset, random_seed, hidden_sizes, K, ckpt_path):
         _hparam('weight_decay_g', 0., lambda r: 10**r.uniform(-6, -2))
 
     if dataset == "LM_PACS_Debug":
-        hparams['batch_size'] = (4, 4)
+        hparams['batch_size'] = (1, 1)
 
 
     return hparams

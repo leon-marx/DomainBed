@@ -7,6 +7,7 @@ def accuracy(network, loader, weights, device):
     with torch.no_grad():
         batch = []
         for x, y in loader:
+            print("loop")
             x["image"] = x["image"].to(device)
             x["domain"] = x["domain"].to(device)
             y = y.to(device)
@@ -15,4 +16,4 @@ def accuracy(network, loader, weights, device):
             
     network.train()
 
-    return 1 / loss.item()
+    return 1 / (1 + loss.item())
