@@ -93,7 +93,7 @@ class LM_CVAE(Algorithm):
         self.optimizer.step()
 
         if return_train_loss:
-            train_loss = torch.tensor([loss.item()], requires_grad=False)
+            train_loss = float(loss.item())
             return {'loss': loss.item()}, train_loss
         else:
             return {'loss': loss.item()}
