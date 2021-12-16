@@ -153,7 +153,7 @@ def _hparams(algorithm, dataset, random_seed, hidden_sizes, K, ckpt_path):
 
     if dataset == "LM_PACS":
         hparams['batch_size'] = (16, 16)
-        hparams['lr'] = (5e-07, 5e-07)
+        hparams['lr'] = (5e-10, 5e-10)
 
 
     return hparams
