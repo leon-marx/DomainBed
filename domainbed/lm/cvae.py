@@ -97,6 +97,34 @@ class LM_CVAE(Algorithm):
         else:
             return {'loss': loss.item()}
 
+    def evaluate(self, minibatches, unlabeled=None, return_eval_loss=False):
+        """
+        Calculates the loss for the given set of minibatches.
+
+        minibatches: List of tuples [(x, y)]
+            x: {"image": Tensor of shape (batch_size, channles, height, width),
+                "domain": Tensor of shape (batch_size, 1)}
+                    The 1 corresponds to int d = 0,...,3 (domain)
+            y: Tensor of shape (batch_size, 1)
+                The 1 corresponds to int d = 0,...,6 (class)
+        unlabeled: This is not supported!
+        return_eval_loss: If True, returns loss as 2nd value (to display in progress bar)
+        """
+        images = torch.cat([x["image"] for x, y in minibatches]).flatten(start_dim=1) # (batch_size, M) -> M = channels * height * width
+        conditions = torch.nn.functional.one_hot(torch.cat([x["domain"] for x, y in minibatches]), num_classes=self.num_domains).flatten(start_dim=1) # (batch_size, num_classes)
+
+        enc_mu, enc_logvar = self.encoder(images, conditions)
+        z = self.sample(enc_mu, enc_logvar, num=self.K)  # torch.diagonal(enc_logvar.exp(), dim1=1, dim2=2)
+
+        dec_mu, dec_logvar = self.decoder.forward_K(z, conditions)
+
+        loss = self.loss(images, enc_mu, enc_logvar, dec_mu, dec_logvar)
+
+        if return_eval_loss:
+            return {'loss': loss.item()}, loss.item()
+        else:
+            return {'loss': loss.item()}
+
     def sample(self, mu, logvar, num=1):
         """
         Samples from N(mu, var).

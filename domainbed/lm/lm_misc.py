@@ -1,7 +1,7 @@
 import torch
 
 def accuracy(network, loader, weights, device):
-    loss = 0
+    total = 0
 
     network.eval()
     with torch.no_grad():
@@ -9,8 +9,9 @@ def accuracy(network, loader, weights, device):
             x["image"] = x["image"].to(device)
             x["domain"] = x["domain"].to(device)
             y = y.to(device)
-            loss += network.update(minibatches=[(x, y)]).detach().item()
+            _, loss = network.evaluate(minibatches=[(x, y)], return_eval_loss=True)
+            total += loss
             
     network.train()
 
-    return 1 / (1 + loss)
+    return 1 / (1 + total)
