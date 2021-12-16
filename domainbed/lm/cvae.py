@@ -247,7 +247,7 @@ class ELBOLoss(torch.nn.Module):
         x = torch.stack([x for i in range(dec_mu.shape[1])], dim=1)
         return torch.mean(
             (torch.sum(
-                enc_mu ** 2 + enc_logvar.exp() - enc_logvar - torch.ones(enc_mu.shape),
+                enc_mu ** 2 + enc_logvar.exp() - enc_logvar - torch.ones(enc_mu.shape).to(x.device),
                 dim=1
             ) * 0.5
             + torch.mean(

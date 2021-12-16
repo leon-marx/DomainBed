@@ -86,7 +86,7 @@ class LM_PACS(MultipleEnvironmentImageFolder):
 
 class LM_PACS_Debug(MultipleEnvironmentImageFolder):
     CHECKPOINT_FREQ = 300
-    N_WORKERS = 1
+    N_WORKERS = 0
     ENVIRONMENTS = ["A", "C", "P", "S"]
     def __init__(self, root, test_envs, hparams):
         self.dir = os.path.join(root, "PACS/")
