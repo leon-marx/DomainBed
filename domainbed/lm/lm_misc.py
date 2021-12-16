@@ -12,8 +12,8 @@ def accuracy(network, loader, weights, device):
             x["domain"] = x["domain"].to(device)
             y = y.to(device)
             batch.append((x, y))
-        loss += network.update(minibatches=batch)
+        loss += network.update(minibatches=batch).detach().item()
             
     network.train()
 
-    return 1 / (1 + loss.item())
+    return 1 / (1 + loss)
