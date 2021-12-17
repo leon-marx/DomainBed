@@ -229,6 +229,7 @@ if __name__ == "__main__":
 
     last_results_keys = None
     progress_bar = tqdm(range(start_step, n_steps))
+    train_loss = [0 for i in range(10)]
     if args.save_best_every_checkpoint:
         best_loss = np.inf
     for step in progress_bar:
@@ -249,7 +250,9 @@ if __name__ == "__main__":
         else:
             uda_device = None
         if "LM" in args.dataset:
-            step_vals, train_loss = algorithm.update(minibatches_device, uda_device, return_train_loss=True)
+            step_vals, step_train_loss = algorithm.update(minibatches_device, uda_device, return_train_loss=True)
+            train_loss.pop(0)
+            train_loss.append(step_train_loss)
         else:
             step_vals = algorithm.update(minibatches_device, uda_device)
         checkpoint_vals['step_time'].append(time.time() - step_start_time)
@@ -305,7 +308,7 @@ if __name__ == "__main__":
                     print(f"new best: {results['loss']}")
                     best_loss = results['loss']
                     save_checkpoint(f'best_model.pkl')
-        progress_bar.set_description("Loss: {:0.2f}".format(train_loss))
+        progress_bar.set_description("Loss: {:0.2f}".format(np.mean(train_loss)))
 
     save_checkpoint('model.pkl')
 
