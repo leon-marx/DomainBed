@@ -302,7 +302,7 @@ if __name__ == "__main__":
 
             if args.save_model_every_checkpoint:
                 save_checkpoint(f'model_step{step}.pkl')
-            if args.save_best_every_checkpoint:
+            if (args.save_best_every_checkpoint) and (step > 0):
                 if results["loss"] < best_loss:
                     print(f"old best: {best_loss}")
                     print(f"new best: {results['loss']}")

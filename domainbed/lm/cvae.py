@@ -82,7 +82,7 @@ class LM_CVAE(Algorithm):
         conditions = torch.nn.functional.one_hot(torch.cat([x["domain"] for x, y in minibatches]), num_classes=self.num_domains).flatten(start_dim=1) # (batch_size, num_classes)
 
         enc_mu, enc_logvar = self.encoder(images, conditions)
-        z = self.sample(enc_mu, enc_logvar, num=self.K)  # torch.diagonal(enc_logvar.exp(), dim1=1, dim2=2)
+        z = self.sample(enc_mu, enc_logvar, num=self.K)
 
         dec_mu, dec_logvar = self.decoder.forward_K(z, conditions)
 
@@ -114,7 +114,7 @@ class LM_CVAE(Algorithm):
         conditions = torch.nn.functional.one_hot(torch.cat([x["domain"] for x, y in minibatches]), num_classes=self.num_domains).flatten(start_dim=1) # (batch_size, num_classes)
 
         enc_mu, enc_logvar = self.encoder(images, conditions)
-        z = self.sample(enc_mu, enc_logvar, num=self.K)  # torch.diagonal(enc_logvar.exp(), dim1=1, dim2=2)
+        z = self.sample(enc_mu, enc_logvar, num=self.K) 
 
         dec_mu, dec_logvar = self.decoder.forward_K(z, conditions)
 
@@ -124,6 +124,36 @@ class LM_CVAE(Algorithm):
             return {'loss': loss.item()}, loss.item()
         else:
             return {'loss': loss.item()}
+
+    def run(self, images, enc_conditions, dec_conditions, raw=False):
+        """
+        Generates reconstructions of the given images and conditions
+
+        images: Tensor of shape (batch_size, channels, height, width)
+        enc_conditions: Tensor of shape (batch_size, 1)
+            The 1 corresponds to int d = 0,...,3 (domain)
+        dec_conditions: Tensor of shape (batch_size, 1)
+            The 1 corresponds to int d = 0,...,3 (domain)
+        raw: Bool, if True no noise / variation is added
+        """
+        self.eval()
+        with torch.no_grad():
+            images = images.flatten(start_dim=1) # (batch_size, M) -> M = channels * height * width
+            enc_conditions = torch.nn.functional.one_hot(enc_conditions, num_classes=self.num_domains).flatten(start_dim=1) # (batch_size, num_classes)
+            dec_conditions = torch.nn.functional.one_hot(dec_conditions, num_classes=self.num_domains).flatten(start_dim=1) # (batch_size, num_classes)
+            if raw:
+                enc_mu, enc_logvar = self.encoder(images, enc_conditions)
+                
+                reconstructions, dec_logvar = self.decoder(enc_mu, dec_conditions)
+            else:
+                enc_mu, enc_logvar = self.encoder(images, enc_conditions)
+                z = self.sample(enc_mu, enc_logvar)
+
+                dec_mu, dec_logvar = self.decoder(z, dec_conditions)
+                reconstructions = self.sample(dec_mu, dec_logvar)
+        self.train()
+
+        return reconstructions.view(-1, *self.input_shape)
 
     def sample(self, mu, logvar, num=1):
         """
