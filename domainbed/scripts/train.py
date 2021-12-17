@@ -50,11 +50,14 @@ if __name__ == "__main__":
                         help="For domain adaptation, % of test to use unlabeled for training.")
     parser.add_argument('--skip_model_save', action='store_true')
     parser.add_argument('--save_model_every_checkpoint', action='store_true')
+    # Own arguments:
     parser.add_argument('--gpu', type=str, default="4")
     parser.add_argument('--hidden_sizes', type=str, default=None)
     parser.add_argument('--K', type=int, default=10)
     parser.add_argument('--ckpt_path', type=str, default=None)
     parser.add_argument('--lr', type=float, default=None)
+    parser.add_argument('--save_best_every_checkpoint', action='store_true')
+
     args = parser.parse_args()
 
     # If we ever want to implement checkpointing, just persist these values
@@ -226,6 +229,8 @@ if __name__ == "__main__":
 
     last_results_keys = None
     progress_bar = tqdm(range(start_step, n_steps))
+    if args.save_best_every_checkpoint:
+        best_loss = np.inf
     for step in progress_bar:
         step_start_time = time.time()
         if "LM" in args.dataset:
@@ -294,6 +299,12 @@ if __name__ == "__main__":
 
             if args.save_model_every_checkpoint:
                 save_checkpoint(f'model_step{step}.pkl')
+            if args.save_best_every_checkpoint:
+                if results["loss"] < best_loss:
+                    print(f"old best: {best_loss}")
+                    print(f"new best: {results['loss']}")
+                    best_loss = results['loss']
+                    save_checkpoint(f'best_model.pkl')
         progress_bar.set_description("Loss: {:0.2f}".format(train_loss))
 
     save_checkpoint('model.pkl')

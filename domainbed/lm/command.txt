@@ -3,7 +3,7 @@ python -m domainbed.scripts.train\
        --hidden_sizes "[1024,512]"\
        --K 10\
        --ckpt_path ./../logs/DB_CVAE_1/model_step2000.pkl\
-       --lr 5-15\
+       --lr 5e-10\
        --dataset LM_PACS\
        --data_dir ./../data/\
        --output_dir ./../logs/DB_CVAE_3/\
