@@ -317,7 +317,7 @@ class Decoder(torch.nn.Module):
         x = self.reshape(x)
         x = self.conv_sequential(x)
         dec_mu = self.get_mu(x).view(batch_size, K, 3, 224, 224)
-        dec_logvar = self.get_logvar(x).view(batch_size, 3, 224, 224)
+        dec_logvar = self.get_logvar(x).view(batch_size, K, 3, 224, 224)
 
         return dec_mu, dec_logvar
         
