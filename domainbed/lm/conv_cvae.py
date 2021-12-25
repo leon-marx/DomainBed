@@ -204,13 +204,13 @@ class Encoder(torch.nn.Module):
         """
         super().__init__()
         self.conv_sequential = torch.nn.Sequential(
-            torch.nn.Conv2d(in_channels=3, out_channels=8, kernel_size=3, padding="same"),
+            torch.nn.Conv2d(in_channels=3, out_channels=8, kernel_size=3, padding=1),
             torch.nn.ReLU(),
             torch.nn.MaxPool2d(kernel_size=2),  # (N, 8, 112, 112)
-            torch.nn.Conv2d(in_channels=8, out_channels=16, kernel_size=3, padding="same"),
+            torch.nn.Conv2d(in_channels=8, out_channels=16, kernel_size=3, padding=1),
             torch.nn.ReLU(),
             torch.nn.MaxPool2d(kernel_size=2),  # (N, 16, 56, 56)
-            torch.nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, padding="same"),
+            torch.nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, padding=1),
             torch.nn.ReLU(),
             torch.nn.MaxPool2d(kernel_size=2),  # (N, 32, 28, 28)
         )
@@ -269,20 +269,20 @@ class Decoder(torch.nn.Module):
         self.reshape = lambda x : x.view(-1, 32, 28, 28)
         self.conv_sequential = torch.nn.Sequential(
             torch.nn.Upsample(scale_factor=2, mode="nearest"),
-            torch.nn.ConvTranspose2d(in_channels=32, out_channels=16, kernel_size=3, padding="same"),
+            torch.nn.ConvTranspose2d(in_channels=32, out_channels=16, kernel_size=3, padding=1),
             torch.nn.ReLU(),  # (N, 16, 56, 56)
             torch.nn.Upsample(scale_factor=2, mode="nearest"),
-            torch.nn.ConvTranspose2d(in_channels=16, out_channels=8, kernel_size=3, padding="same"),
+            torch.nn.ConvTranspose2d(in_channels=16, out_channels=8, kernel_size=3, padding=1),
             torch.nn.ReLU(),  # (N, 8, 112, 112)
         )
         self.get_mu = torch.nn.Sequential(
             torch.nn.Upsample(scale_factor=2, mode="nearest"),
-            torch.nn.ConvTranspose2d(in_channels=8, out_channels=3, kernel_size=3, padding="same"),
+            torch.nn.ConvTranspose2d(in_channels=8, out_channels=3, kernel_size=3, padding=1),
             torch.nn.ReLU(),  # (N, 3, 224, 224)
         )
         self.get_logvar = torch.nn.Sequential(
             torch.nn.Upsample(scale_factor=2, mode="nearest"),
-            torch.nn.ConvTranspose2d(in_channels=8, out_channels=3, kernel_size=3, padding="same"),
+            torch.nn.ConvTranspose2d(in_channels=8, out_channels=3, kernel_size=3, padding=1),
             torch.nn.ReLU(),  # (N, 3, 224, 224)
         )
 
