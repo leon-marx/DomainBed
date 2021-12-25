@@ -328,7 +328,7 @@ class ELBOLoss(torch.nn.Module):
         Initializes the ELBO loss.
         """
         super().__init__()
-        self.reshape = lambda x, N, K : x.view(N, K, 3, 224, 224)
+        self.flat_K = lambda x, N, K : x.view(N, K, -1)
 
     def forward(self, x, enc_mu, enc_logvar, dec_mu, dec_logvar):
         """
@@ -342,11 +342,12 @@ class ELBOLoss(torch.nn.Module):
         """
         N = dec_mu.shape[0]
         K = dec_mu.shape[1]
-        x = self.reshape(x, N, K)
-        dec_mu = self.reshape(dec_mu, N, K)
-        dec_logvar = self.reshape(dec_logvar, N, K)
 
-        x = torch.stack([x for i in range(dec_mu.shape[1])], dim=1)
+        x = torch.stack([x for i in range(K)], dim=1)
+        x = self.flat_K(x, N, K)
+        dec_mu = self.flat_K(dec_mu, N, K)
+        dec_logvar = self.flat_K(dec_logvar, N, K)
+
         return torch.mean(
             # KL divergence -> regularization
             (torch.sum(
