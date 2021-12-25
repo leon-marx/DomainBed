@@ -10,9 +10,10 @@ from domainbed.lib.fast_data_loader import FastDataLoader
 
 
 parser = argparse.ArgumentParser(description='Testing Model')
-parser.add_argument('--ckpt_path', type=str, default=None)
+parser.add_argument('--ckpt_path', type=str, default=None)  # logs/log_dir (no / at beginning)
 parser.add_argument('--img_path', type=str, default=None)
 parser.add_argument('--num_samples', type=int, default=1)
+parser.add_argument('--raw', type=bool, default=False)
 args = parser.parse_args()
 
 
@@ -23,6 +24,7 @@ else:
 
 ckpt_path = repo_path + args.ckpt_path
 checkpoint = torch.load(ckpt_path, map_location="cpu")
+raw = args.raw
 
 input_shape = checkpoint["model_input_shape"]
 num_classes = checkpoint["model_num_classes"]
@@ -46,10 +48,14 @@ def make_plottable(image):
     return image_plt
 
 for i, batch in enumerate(next(eval_minibatches_iterator)):
+    print(batch)
+    for x, y in batch:
+        print(x)
+        print(x.shape)
     images = batch[0]["image"]
     enc_conditions = batch[0]["domain"]
     dec_conditions = batch[0]["domain"]
-    reconstructions = model.run(images, enc_conditions, dec_conditions, raw=True)
+    reconstructions = model.run(images, enc_conditions, dec_conditions, raw=raw)
 
     for j in range(reconstructions.shape[0]):
         image_plt = make_plottable(images[j])

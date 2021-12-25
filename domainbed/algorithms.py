@@ -22,6 +22,7 @@ from domainbed.lib.misc import (
 
 # Own imports:
 from domainbed.lm.cvae import LM_CVAE
+from domainbed.lm.conv_cvae import LM_CCVAE
 
 
 ALGORITHMS = [
@@ -47,7 +48,8 @@ ALGORITHMS = [
     'SelfReg',
     "Fishr",
     'TRM',
-    "LM_CVAE"
+    "LM_CVAE",
+    "LM_CCVAE"
 ]
 
 

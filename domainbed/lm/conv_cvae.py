@@ -27,7 +27,7 @@ class Algorithm(torch.nn.Module):
         raise NotImplementedError
 
 
-class LM_CVAE(Algorithm):
+class LM_CCVAE(Algorithm):
     def __init__(self, input_shape, num_classes, num_domains, hparams):
         """
         Initializes the conditional variational autoencoder.
@@ -78,7 +78,7 @@ class LM_CVAE(Algorithm):
         unlabeled: This is not supported!
         return_train_loss: If True, returns loss as 2nd value (to display in progress bar)
         """
-        images = torch.cat([x["image"] for x, y in minibatches]).flatten(start_dim=1) # (batch_size, M) -> M = channels * height * width
+        images = torch.cat([x["image"] for x, y in minibatches]) # (batch_size, channels, height, width)
         conditions = torch.nn.functional.one_hot(torch.cat([x["domain"] for x, y in minibatches]), num_classes=self.num_domains).flatten(start_dim=1) # (batch_size, num_classes)
 
         enc_mu, enc_logvar = self.encoder(images, conditions)
@@ -110,7 +110,7 @@ class LM_CVAE(Algorithm):
         unlabeled: This is not supported!
         return_eval_loss: If True, returns loss as 2nd value (to display in progress bar)
         """
-        images = torch.cat([x["image"] for x, y in minibatches]).flatten(start_dim=1) # (batch_size, M) -> M = channels * height * width
+        images = torch.cat([x["image"] for x, y in minibatches]) # (batch_size, channels, height, width)
         conditions = torch.nn.functional.one_hot(torch.cat([x["domain"] for x, y in minibatches]), num_classes=self.num_domains).flatten(start_dim=1) # (batch_size, num_classes)
 
         enc_mu, enc_logvar = self.encoder(images, conditions)
@@ -138,7 +138,6 @@ class LM_CVAE(Algorithm):
         """
         self.eval()
         with torch.no_grad():
-            images = images.flatten(start_dim=1) # (batch_size, M) -> M = channels * height * width
             enc_conditions = torch.nn.functional.one_hot(enc_conditions, num_classes=self.num_domains).flatten(start_dim=1) # (batch_size, num_classes)
             dec_conditions = torch.nn.functional.one_hot(dec_conditions, num_classes=self.num_domains).flatten(start_dim=1) # (batch_size, num_classes)
             if raw:
@@ -153,13 +152,13 @@ class LM_CVAE(Algorithm):
                 reconstructions = self.sample(dec_mu, dec_logvar)
         self.train()
 
-        return reconstructions.view(-1, *self.input_shape)
+        return reconstructions
 
     def sample(self, mu, logvar, num=1):
         """
         Samples from N(mu, var).
 
-        mu: Tensor of shape (batch_size, D) -> D = dimension of z
+        mu: Tensor of shape (batch_size, ...) -> ... can be an arbitrary shape
         logvar: Tensor of shape (batch_size, D)
         num: int, Number of samples.
         """
@@ -204,15 +203,27 @@ class Encoder(torch.nn.Module):
         num_domains: Number of domains, usually 4
         """
         super().__init__()
+        self.conv_sequential = torch.nn.Sequential(
+            torch.nn.Conv2d(in_channels=3, out_channels=8, kernel_size=3, padding="same"),
+            torch.nn.ReLU(),
+            torch.nn.MaxPool2d(kernel_size=2),  # (N, 8, 112, 112)
+            torch.nn.Conv2d(in_channels=8, out_channels=16, kernel_size=3, padding="same"),
+            torch.nn.ReLU(),
+            torch.nn.MaxPool2d(kernel_size=2),  # (N, 16, 56, 56)
+            torch.nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, padding="same"),
+            torch.nn.ReLU(),
+            torch.nn.MaxPool2d(kernel_size=2),  # (N, 32, 28, 28)
+        )
+        self.flatten = torch.nn.Flatten()
         modules = []
         for i, out_size in enumerate(hidden_sizes[:-1]):
             if i == 0:
-                modules.append(torch.nn.Linear(input_size + num_domains, out_size))
+                modules.append(torch.nn.Linear(25088 + num_domains, out_size))
                 modules.append(torch.nn.ReLU())
             else:
                 modules.append(torch.nn.Linear(hidden_sizes[i-1], out_size))
                 modules.append(torch.nn.ReLU())
-        self.sequential = torch.nn.Sequential(*modules)
+        self.linear_sequential = torch.nn.Sequential(*modules)
         self.get_mu = torch.nn.Linear(hidden_sizes[-2], hidden_sizes[-1])
         self.get_logvar = torch.nn.Linear(hidden_sizes[-2], hidden_sizes[-1])
 
@@ -220,13 +231,15 @@ class Encoder(torch.nn.Module):
         """
         Calculates mean and diagonal log-variance of p(z | x).
 
-        images: Tensor of shape (batch_size, M) -> M = channels * height * width
+        images: Tensor of shape (batch_size, channels, height, width)
         conditions: Tensor of shape (batch_size, num_domains)
         """
-        x = torch.cat((images, conditions), dim=1)
-        h = self.sequential(x)
-        enc_mu = self.get_mu(h)
-        enc_logvar = self.get_logvar(h)
+        x = self.conv_sequential(images)
+        x = self.flatten(x)
+        x = torch.cat((x, conditions), dim=1)
+        x = self.linear_sequential(x)
+        enc_mu = self.get_mu(x)
+        enc_logvar = self.get_logvar(x)
 
         return enc_mu, enc_logvar
 
@@ -242,16 +255,36 @@ class Decoder(torch.nn.Module):
         """
         super().__init__()
         modules = []
-        for i, out_size in enumerate(hidden_sizes[::-1][:-1]):
+        for i, out_size in enumerate(hidden_sizes[::-1]):
             if i == 0:
                 modules.append(torch.nn.Linear(out_size + num_domains, hidden_sizes[::-1][i+1]))
+                modules.append(torch.nn.ReLU())
+            elif i == len(hidden_sizes) - 1:
+                modules.append(torch.nn.Linear(out_size, 25088))
                 modules.append(torch.nn.ReLU())
             else:
                 modules.append(torch.nn.Linear(out_size, hidden_sizes[::-1][i+1]))
                 modules.append(torch.nn.ReLU())
-        self.sequential = torch.nn.Sequential(*modules)
-        self.get_mu = torch.nn.Linear(hidden_sizes[0], input_size)
-        self.get_logvar = torch.nn.Linear(hidden_sizes[0], input_size)
+        self.linear_sequential = torch.nn.Sequential(*modules)
+        self.reshape = lambda x : x.view(-1, 32, 28, 28)
+        self.conv_sequential = torch.nn.Sequential(
+            torch.nn.Upsample(scale_factor=2, mode="nearest"),
+            torch.nn.ConvTranspose2d(in_channels=32, out_channels=16, kernel_size=3, padding="same"),
+            torch.nn.ReLU(),  # (N, 16, 56, 56)
+            torch.nn.Upsample(scale_factor=2, mode="nearest"),
+            torch.nn.ConvTranspose2d(in_channels=16, out_channels=8, kernel_size=3, padding="same"),
+            torch.nn.ReLU(),  # (N, 8, 112, 112)
+        )
+        self.get_mu = torch.nn.Sequential(
+            torch.nn.Upsample(scale_factor=2, mode="nearest"),
+            torch.nn.ConvTranspose2d(in_channels=8, out_channels=3, kernel_size=3, padding="same"),
+            torch.nn.ReLU(),  # (N, 3, 224, 224)
+        )
+        self.get_logvar = torch.nn.Sequential(
+            torch.nn.Upsample(scale_factor=2, mode="nearest"),
+            torch.nn.ConvTranspose2d(in_channels=8, out_channels=3, kernel_size=3, padding="same"),
+            torch.nn.ReLU(),  # (N, 3, 224, 224)
+        )
 
     def forward(self, codes, conditions):
         """
@@ -261,9 +294,11 @@ class Decoder(torch.nn.Module):
         conditions: Tensor of shape (batch_size, num_domains)
         """
         x = torch.cat((codes, conditions), dim=1)
-        h = self.sequential(x)
-        dec_mu = self.get_mu(h)
-        dec_logvar = self.get_logvar(h)
+        x = self.linear_sequential(x)
+        x = self.reshape(x)
+        x = self.conv_sequential(x)
+        dec_mu = self.get_mu(x)
+        dec_logvar = self.get_logvar(x)
 
         return dec_mu, dec_logvar
     
@@ -276,11 +311,13 @@ class Decoder(torch.nn.Module):
         """
         batch_size = codes.shape[0]
         K = codes.shape[1]
-        conditions = torch.stack([conditions for i in range(codes.shape[1])], dim=1) # (batch_size, K, num_domains)
+        conditions = torch.stack([conditions for i in range(K)], dim=1) # (batch_size, K, num_domains)
         x = torch.cat((codes, conditions), dim=2).view(batch_size * K, -1) # (batch_size * K, D + num_domains)
-        h = self.sequential(x)
-        dec_mu = self.get_mu(h).view(batch_size, K, -1)
-        dec_logvar = self.get_logvar(h).view(batch_size, K, -1)
+        x = self.linear_sequential(x)
+        x = self.reshape(x)
+        x = self.conv_sequential(x)
+        dec_mu = self.get_mu(x).view(batch_size, K, 3, 224, 224)
+        dec_logvar = self.get_logvar(x).view(batch_size, 3, 224, 224)
 
         return dec_mu, dec_logvar
         
@@ -291,17 +328,24 @@ class ELBOLoss(torch.nn.Module):
         Initializes the ELBO loss.
         """
         super().__init__()
+        self.reshape = lambda x, N, K : x.view(N, K, -1)
 
     def forward(self, x, enc_mu, enc_logvar, dec_mu, dec_logvar):
         """
         Calculates the ELBO Loss (negative ELBO).
 
-        x: Tensor of shape (batch_size, M) -> M = channels * height * width
+        x: Tensor of shape (batch_size, channels, height, width)
         enc_mu: Tensor of shape (batch_size, D) -> D = dimension of z
         enc_logvar: Tensor of shape (batch_size, D)
-        dec_mu: Tensor of shape (batch_size, K, M) -> K = number of samples for z
-        dec_logvar: Tensor of shape (batch_size, K, M)
+        dec_mu: Tensor of shape (batch_size, K, channels, height, width) -> K = number of samples for z
+        dec_logvar: Tensor of shape (batch_size, K, channels, height, width)
         """
+        N = dec_mu.shape[0]
+        K = dec_mu.shape[1]
+        x = self.reshape(x, N, K)
+        dec_mu = self.reshape(dec_mu, N, K)
+        dec_logvar = self.reshape(dec_logvar, N, K)
+
         x = torch.stack([x for i in range(dec_mu.shape[1])], dim=1)
         return torch.mean(
             # KL divergence -> regularization
