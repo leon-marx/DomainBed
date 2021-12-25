@@ -328,7 +328,7 @@ class ELBOLoss(torch.nn.Module):
         Initializes the ELBO loss.
         """
         super().__init__()
-        self.reshape = lambda x, N, K : x.view(N, K, -1)
+        self.reshape = lambda x, N, K : x.view(N, K, 3, 224, 224)
 
     def forward(self, x, enc_mu, enc_logvar, dec_mu, dec_logvar):
         """
