@@ -35,8 +35,12 @@ hparams["ckpt_path"] = ckpt_path
 args = checkpoint["args"]
 
 dataset = LM_PACS(args["data_dir"], args["test_envs"], hparams)
-model = LM_CCVAE(input_shape=input_shape, num_classes=num_classes,
-                num_domains=num_domains, hparams=hparams)
+if "CCVAE" in ckpt_path:
+    model = LM_CCVAE(input_shape=input_shape, num_classes=num_classes,
+                    num_domains=num_domains, hparams=hparams)
+elif "CVAE" in ckpt_path:
+    model = LM_CVAE(input_shape=input_shape, num_classes=num_classes,
+                    num_domains=num_domains, hparams=hparams)
 
 eval_minibatches_iterator = zip(*[FastDataLoader(dataset=env, batch_size=4,
                    num_workers=0) for env in dataset])
