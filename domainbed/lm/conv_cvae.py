@@ -277,13 +277,11 @@ class Decoder(torch.nn.Module):
         )
         self.get_mu = torch.nn.Sequential(
             torch.nn.Upsample(scale_factor=2, mode="nearest"),
-            torch.nn.ConvTranspose2d(in_channels=8, out_channels=3, kernel_size=3, padding=1),
-            torch.nn.ReLU(),  # (N, 3, 224, 224)
+            torch.nn.ConvTranspose2d(in_channels=8, out_channels=3, kernel_size=3, padding=1),  # (N, 3, 224, 224)
         )
         self.get_logvar = torch.nn.Sequential(
             torch.nn.Upsample(scale_factor=2, mode="nearest"),
-            torch.nn.ConvTranspose2d(in_channels=8, out_channels=3, kernel_size=3, padding=1),
-            torch.nn.ReLU(),  # (N, 3, 224, 224)
+            torch.nn.ConvTranspose2d(in_channels=8, out_channels=3, kernel_size=3, padding=1),  # (N, 3, 224, 224)
         )
 
     def forward(self, codes, conditions):
@@ -385,7 +383,7 @@ if __name__ == "__main__":
         y = torch.randint(low=0, high=7, size=(batch_size,))
         minibatches.append((x, y))
 
-    cvae = LM_CVAE(input_shape=input_shape, num_classes=num_classes,
+    cvae = LM_CCVAE(input_shape=input_shape, num_classes=num_classes,
                    num_domains=num_domains, hparams=hparams)
     print(cvae)
     """

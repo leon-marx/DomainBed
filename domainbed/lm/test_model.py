@@ -5,6 +5,7 @@ import torch
 
 # Own imports:
 from domainbed.lm.cvae import LM_CVAE
+from domainbed.lm.conv_cvae import LM_CCVAE
 from domainbed.lm.dataset import LM_PACS
 from domainbed.lib.fast_data_loader import FastDataLoader
 
@@ -34,7 +35,7 @@ hparams["ckpt_path"] = ckpt_path
 args = checkpoint["args"]
 
 dataset = LM_PACS(args["data_dir"], args["test_envs"], hparams)
-model = LM_CVAE(input_shape=input_shape, num_classes=num_classes,
+model = LM_CCVAE(input_shape=input_shape, num_classes=num_classes,
                 num_domains=num_domains, hparams=hparams)
 
 eval_minibatches_iterator = zip(*[FastDataLoader(dataset=env, batch_size=4,
@@ -48,10 +49,6 @@ def make_plottable(image):
     return image_plt
 
 for i, batch in enumerate(next(eval_minibatches_iterator)):
-    print(batch)
-    for x, y in batch:
-        print(x)
-        print(x.shape)
     images = batch[0]["image"]
     enc_conditions = batch[0]["domain"]
     dec_conditions = batch[0]["domain"]
