@@ -315,7 +315,7 @@ class Decoder(torch.nn.Module):
                 modules.append(torch.nn.Linear(out_size, hidden_sizes[::-1][i+1]))
                 modules.append(torch.nn.ReLU())
         self.linear_sequential = torch.nn.Sequential(*modules)
-        self.reshape = lambda x : x.view(-1, 512, 28, 28)
+        self.reshape = lambda x : x.view(-1, 512, 7, 7)
         self.conv_sequential = torch.nn.Sequential(
             torch.nn.ConvTranspose2d(in_channels=512, out_channels=512, kernel_size=3, padding=1),
             torch.nn.BatchNorm2d(512),
