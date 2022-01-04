@@ -315,7 +315,7 @@ class Decoder(torch.nn.Module):
                 modules.append(torch.nn.Linear(out_size, hidden_sizes[::-1][i+1]))
                 modules.append(torch.nn.ReLU())
         self.linear_sequential = torch.nn.Sequential(*modules)
-        self.reshape = lambda x : x.view(-1, 32, 28, 28)
+        self.reshape = lambda x : x.view(-1, 512, 28, 28)
         self.conv_sequential = torch.nn.Sequential(
             torch.nn.ConvTranspose2d(in_channels=512, out_channels=512, kernel_size=3, padding=1),
             torch.nn.BatchNorm2d(512),
@@ -361,7 +361,7 @@ class Decoder(torch.nn.Module):
             torch.nn.BatchNorm2d(128),
             torch.nn.ReLU(),
             torch.nn.Upsample(scale_factor=2, mode="nearest"),
-            torch.nn.ConvTranspose2d(in_channels=218, out_channels=64, kernel_size=3, padding=1),  # (N, 64, 56, 56)
+            torch.nn.ConvTranspose2d(in_channels=128, out_channels=64, kernel_size=3, padding=1),  # (N, 64, 56, 56)
             torch.nn.BatchNorm2d(64),
             torch.nn.ReLU(),
 
@@ -470,9 +470,9 @@ if __name__ == "__main__":
     input_shape = (3, 224, 224)
     num_classes = 7
     num_domains = 3
-    hparams = {"hidden_sizes": "[1024,512,128]",
-               "K": 25,
-               "ckpt_path": "C:/users/gooog/desktop/bachelor/code/bachelor/logs/DB_test_2/model.pkl",
+    hparams = {"hidden_sizes": "[1024,512]",
+               "K": 10,
+               "ckpt_path": None,
                "lr": 5e-05,
                "weight_decay": 0.0,
                "batch_size": 8}
@@ -484,12 +484,10 @@ if __name__ == "__main__":
         y = torch.randint(low=0, high=7, size=(batch_size,))
         minibatches.append((x, y))
 
-    cvae = LM_CCVAE(input_shape=input_shape, num_classes=num_classes,
+    cvae = BIG_LM_CCVAE(input_shape=input_shape, num_classes=num_classes,
                    num_domains=num_domains, hparams=hparams)
     print(cvae)
-    """
     step_vals = cvae.update(minibatches=minibatches)
     step_vals, train_loss = cvae.update(
         minibatches=minibatches, return_train_loss=True)
     print(step_vals, train_loss)
-    """
