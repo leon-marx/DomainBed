@@ -106,7 +106,7 @@ def _hparams(algorithm, dataset, random_seed, hidden_sizes, K, ckpt_path):
         hparams['iters'] = (200, lambda r: int(10 ** r.uniform(0, 4)))
         hparams['groupdro_eta'] = (1e-2, lambda r: 10 ** r.uniform(-3, -1))
 
-    elif algorithm in ["LM_CVAE", "LM_CCVAE"]:
+    elif "LM" in algorithm:
         hparams['hidden_sizes'] = (hidden_sizes, [128])
         hparams['K'] = (K, 10)
         hparams['ckpt_path'] = (ckpt_path, None)
