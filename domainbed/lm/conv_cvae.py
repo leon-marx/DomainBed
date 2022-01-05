@@ -391,6 +391,7 @@ class ELBOLoss(torch.nn.Module):
         dec_mu = self.flat_K(dec_mu, N, K)
         dec_logvar = self.flat_K(dec_logvar, N, K)
 
+        print(K)
         print(x.shape)
         print(dec_mu.shape)
         print(dec_logvar.shape)
