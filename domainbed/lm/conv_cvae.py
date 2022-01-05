@@ -113,21 +113,24 @@ class LM_CCVAE(Algorithm):
         unlabeled: This is not supported!
         return_eval_loss: If True, returns loss as 2nd value (to display in progress bar)
         """
-        images = torch.cat([x["image"] for x, y in minibatches]) # (batch_size, channels, height, width)
-        classes = torch.nn.functional.one_hot(torch.cat([y for x, y in minibatches]), num_classes=self.num_classes).flatten(start_dim=1) # (batch_size, num_classes)
-        domains = torch.nn.functional.one_hot(torch.cat([x["domain"] for x, y in minibatches]), num_classes=self.num_domains).flatten(start_dim=1) # (batch_size, num_domains)
+        with torch.no_grad():
+            self.eval()
+            images = torch.cat([x["image"] for x, y in minibatches]) # (batch_size, channels, height, width)
+            classes = torch.nn.functional.one_hot(torch.cat([y for x, y in minibatches]), num_classes=self.num_classes).flatten(start_dim=1) # (batch_size, num_classes)
+            domains = torch.nn.functional.one_hot(torch.cat([x["domain"] for x, y in minibatches]), num_classes=self.num_domains).flatten(start_dim=1) # (batch_size, num_domains)
 
-        enc_mu, enc_logvar = self.encoder(images, classes, domains)
-        z = self.sample(enc_mu, enc_logvar, num=self.K) 
+            enc_mu, enc_logvar = self.encoder(images, classes, domains)
+            z = self.sample(enc_mu, enc_logvar, num=self.K) 
 
-        dec_mu, dec_logvar = self.decoder.forward_K(z, classes, domains)
+            dec_mu, dec_logvar = self.decoder.forward_K(z, classes, domains)
 
-        loss = self.loss(images, enc_mu, enc_logvar, dec_mu, dec_logvar, lamb=self.lamb)
+            loss = self.loss(images, enc_mu, enc_logvar, dec_mu, dec_logvar, lamb=self.lamb)
 
-        if return_eval_loss:
-            return {'loss': loss.item()}, loss.item()
-        else:
-            return {'loss': loss.item()}
+            self.train()
+            if return_eval_loss:
+                return {'loss': loss.item()}, loss.item()
+            else:
+                return {'loss': loss.item()}
 
     def run(self, images, enc_conditions, dec_conditions, raw=False):
         """
