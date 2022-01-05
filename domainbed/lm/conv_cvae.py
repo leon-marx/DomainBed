@@ -84,7 +84,10 @@ class LM_CCVAE(Algorithm):
         enc_mu, enc_logvar = self.encoder(images, classes, domains)
         z = self.sample(enc_mu, enc_logvar, num=self.K)
 
-        dec_mu, dec_logvar = self.decoder.forward_K(z, classes, domains)
+        if self.K > 1:
+            dec_mu, dec_logvar = self.decoder.forward_K(z, classes, domains)
+        else:
+            dec_mu, dec_logvar = self.decoder.forward(z, classes, domains)
 
         loss = self.loss(images, enc_mu, enc_logvar, dec_mu, dec_logvar, lamb=self.lamb)
 
