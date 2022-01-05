@@ -57,6 +57,7 @@ if __name__ == "__main__":
     parser.add_argument('--ckpt_path', type=str, default=None)
     parser.add_argument('--lamb', type=float, default=1.0)
     parser.add_argument('--lr', type=float, default=None)
+    parser.add_argument('--batch_size', type=int, default=None)
     parser.add_argument('--save_best_every_checkpoint', action='store_true')
 
     args = parser.parse_args()
@@ -102,6 +103,9 @@ if __name__ == "__main__":
 
     if args.lr is not None:
         hparams['lr'] = args.lr
+
+    if args.batch_size is not None:
+        hparams['batch_size'] = args.batch_size
 
     print('HParams:')
     for k, v in sorted(hparams.items()):
