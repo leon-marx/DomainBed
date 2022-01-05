@@ -304,11 +304,6 @@ class Decoder(torch.nn.Module):
             torch.nn.ReLU(),
             torch.nn.ConvTranspose2d(in_channels=64, out_channels=32, kernel_size=3, padding=1),
             torch.nn.ReLU(),  # (N, 32, 112, 112)
-            torch.nn.Upsample(scale_factor=2, mode="nearest"),
-            torch.nn.ConvTranspose2d(in_channels=32, out_channels=32, kernel_size=3, padding=1),
-            torch.nn.ReLU(),
-            torch.nn.ConvTranspose2d(in_channels=32, out_channels=3, kernel_size=3, padding=1),
-            torch.nn.ReLU(),  # (N, 3, 224, 224)
         )
         self.get_mu = torch.nn.Sequential(
             torch.nn.Upsample(scale_factor=2, mode="nearest"),
