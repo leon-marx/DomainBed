@@ -255,8 +255,8 @@ class Encoder(torch.nn.Module):
         classes: Tensor of shape (batch_size, num_classes)
         domains: Tensor of shape (batch_size, num_domains)
         """
-        class_conds = torch.ones(size=(images.shape[0], self.num_classes, 224, 224)) * classes.view(images.shape[0], self.num_classes, 1, 1)
-        domain_conds = torch.ones(size=(images.shape[0], self.num_domains, 224, 224)) * domains.view(images.shape[0], self.num_domains, 1, 1)
+        class_conds = torch.ones(size=(images.shape[0], self.num_classes, 224, 224)).to(images.device) * classes.view(images.shape[0], self.num_classes, 1, 1)
+        domain_conds = torch.ones(size=(images.shape[0], self.num_domains, 224, 224)).to(images.device) * domains.view(images.shape[0], self.num_domains, 1, 1)
         x = torch.cat((images, class_conds, domain_conds), dim=1)
         x = self.conv_sequential(x)
         x = self.flatten(x)
