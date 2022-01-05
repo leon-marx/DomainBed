@@ -386,7 +386,8 @@ class ELBOLoss(torch.nn.Module):
         N = dec_mu.shape[0]
         K = dec_mu.shape[1]
 
-        x = torch.stack([x for i in range(K)], dim=1)
+        if K > 1:
+            x = torch.stack([x for i in range(K)], dim=1)
         x = self.flat_K(x, N, K)
         dec_mu = self.flat_K(dec_mu, N, K)
         dec_logvar = self.flat_K(dec_logvar, N, K)
