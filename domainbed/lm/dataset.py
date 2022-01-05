@@ -2,12 +2,11 @@ import os
 from torchvision import transforms
 from torchvision.datasets import ImageFolder
 
-class AddConditionalInfo(object):
+class AddDomainInfo(object):
     """
     Turns the image into a dict, with:
         x["image"] = image tensor
         x["domain"] = number for domain
-        x["class"] = number for class
     """
     def __init__(self, idx):
         self.idx = idx
