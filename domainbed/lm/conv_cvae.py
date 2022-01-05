@@ -42,7 +42,7 @@ class LM_CCVAE(Algorithm):
         """
         super().__init__(input_shape, num_classes, num_domains, hparams)
         self.input_shape = input_shape
-        self.num_classes = num_classes,
+        self.num_classes = num_classes
         self.num_domains = num_domains + 1  # We do not neglect the test domain for one-hot encoding
         self.hparams = hparams
 
