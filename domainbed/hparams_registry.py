@@ -108,7 +108,7 @@ def _hparams(algorithm, dataset, random_seed, hidden_sizes, K, ckpt_path, lamb):
 
     elif "LM" in algorithm:
         hparams['hidden_sizes'] = (hidden_sizes, [128])
-        hparams['K'] = (K, 10)
+        hparams['K'] = (K, 1)
         hparams['ckpt_path'] = (ckpt_path, None)
         hparams['lamb'] = (lamb, 1.0)
 

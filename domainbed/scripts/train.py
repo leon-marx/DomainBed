@@ -53,7 +53,7 @@ if __name__ == "__main__":
     # Own arguments:
     parser.add_argument('--gpu', type=str, default="4")
     parser.add_argument('--hidden_sizes', type=str, default=None)
-    parser.add_argument('--K', type=int, default=10)
+    parser.add_argument('--K', type=int, default=1)
     parser.add_argument('--ckpt_path', type=str, default=None)
     parser.add_argument('--lamb', type=float, default=1.0)
     parser.add_argument('--lr', type=float, default=None)
