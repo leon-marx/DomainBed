@@ -27,7 +27,7 @@ class Algorithm(torch.nn.Module):
         raise NotImplementedError
 
 
-class LM_CCVAE(Algorithm):
+class BIG_LM_CCVAE(Algorithm):
     def __init__(self, input_shape, num_classes, num_domains, hparams):
         """
         Initializes the conditional variational autoencoder.
@@ -422,7 +422,7 @@ if __name__ == "__main__":
         y = torch.randint(low=0, high=7, size=(batch_size,))
         minibatches.append((x, y))
 
-    cvae = LM_CCVAE(input_shape=input_shape, num_classes=num_classes,
+    cvae = BIG_LM_CCVAE(input_shape=input_shape, num_classes=num_classes,
                    num_domains=num_domains, hparams=hparams)
     print(cvae)
     """
