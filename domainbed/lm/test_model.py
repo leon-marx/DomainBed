@@ -65,6 +65,8 @@ cond_dict = {
 
 def make_plottable(image):
     image_plt = image.permute(1, 2, 0)
+    # print("max:", image.max())
+    # print("min:", image.min())
     if image_plt.min().item() < 0:
         image_plt += image_plt.min().abs().item()
     image_plt /= image_plt.max().item()

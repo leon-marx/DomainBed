@@ -2,11 +2,12 @@ import os
 from torchvision import transforms
 from torchvision.datasets import ImageFolder
 
-class AddDomainInfo(object):
+class AddConditionalInfo(object):
     """
     Turns the image into a dict, with:
         x["image"] = image tensor
         x["domain"] = number for domain
+        x["class"] = number for class
     """
     def __init__(self, idx):
         self.idx = idx
@@ -79,7 +80,7 @@ class MultipleEnvironmentImageFolder(MultipleDomainDataset):
 
 class LM_PACS(MultipleEnvironmentImageFolder):
     CHECKPOINT_FREQ = 300
-    ENVIRONMENTS = ["A", "C", "P", "S"]
+    ENVIRONMENTS = ["A", "C", "P"]
     def __init__(self, root, test_envs, hparams):
         self.dir = os.path.join(root, "PACS/")
         super().__init__(self.dir, test_envs, hparams['data_augmentation'], hparams)
@@ -87,7 +88,7 @@ class LM_PACS(MultipleEnvironmentImageFolder):
 class LM_PACS_Debug(MultipleEnvironmentImageFolder):
     CHECKPOINT_FREQ = 300
     N_WORKERS = 0
-    ENVIRONMENTS = ["A", "C", "P", "S"]
+    ENVIRONMENTS = ["A", "C", "P"]
     def __init__(self, root, test_envs, hparams):
         self.dir = os.path.join(root, "PACS/")
         super().__init__(self.dir, test_envs, hparams['data_augmentation'], hparams)

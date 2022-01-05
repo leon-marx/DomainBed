@@ -27,7 +27,7 @@ class Algorithm(torch.nn.Module):
         raise NotImplementedError
 
 
-class BIG_LM_CCVAE(Algorithm):
+class LM_CCVAE(Algorithm):
     def __init__(self, input_shape, num_classes, num_domains, hparams):
         """
         Initializes the conditional variational autoencoder.
@@ -35,24 +35,25 @@ class BIG_LM_CCVAE(Algorithm):
         input_shape: Tuple of shape (channels, height, width)
         num_classes: int, usually 7
         num_domains: int, usually 3 (number of training classes)
-        hparams: {"K": int, number of samples generated for training,
+        hparams: {"hidden_sizes": list, sizes of the different hidden layers [l1, l2, ...],
+                  "K": int, number of samples generated for training,
                   "ckpt_path": str, checkpoint path to load model from,
-                  "lamb": float, weight for the reconstruction part of the ELBO Loss,
                   ...}
         """
+        import json
         super().__init__(input_shape, num_classes, num_domains, hparams)
         self.input_shape = input_shape
         self.num_classes = num_classes,
         self.num_domains = num_domains + 1  # We do not neglect the test domain for one-hot encoding
         self.hparams = hparams
 
+        self.hidden_sizes = json.loads(self.hparams["hidden_sizes"])  # json to load list
         self.K = self.hparams["K"]
         self.ckpt_path = self.hparams["ckpt_path"]
-        self.lamb = self.hparams["lamb"]
 
         self.input_size = int(torch.prod(torch.Tensor(input_shape)).item())
-        self.encoder = Encoder(num_classes=self.num_classes, num_domains=self.num_domains)
-        self.decoder = Decoder(num_classes=self.num_classes, num_domains=self.num_domains)
+        self.encoder = Encoder(input_size=self.input_size, hidden_sizes=self.hidden_sizes, num_domains=self.num_domains)
+        self.decoder = Decoder(input_size=self.input_size, hidden_sizes=self.hidden_sizes, num_domains=self.num_domains)
         self.loss = ELBOLoss()
         self.optimizer = torch.optim.Adam(
             self.parameters(),
@@ -78,15 +79,14 @@ class BIG_LM_CCVAE(Algorithm):
         return_train_loss: If True, returns loss as 2nd value (to display in progress bar)
         """
         images = torch.cat([x["image"] for x, y in minibatches]) # (batch_size, channels, height, width)
-        classes = torch.nn.functional.one_hot(torch.cat([y for x, y in minibatches]), num_classes=self.num_classes).flatten(start_dim=1) # (batch_size, num_classes)
-        domains = torch.nn.functional.one_hot(torch.cat([x["domain"] for x, y in minibatches]), num_classes=self.num_domains).flatten(start_dim=1) # (batch_size, num_domains)
+        conditions = torch.nn.functional.one_hot(torch.cat([x["domain"] for x, y in minibatches]), num_classes=self.num_domains).flatten(start_dim=1) # (batch_size, num_classes)
 
-        enc_mu, enc_logvar = self.encoder(images, classes, domains)
+        enc_mu, enc_logvar = self.encoder(images, conditions)
         z = self.sample(enc_mu, enc_logvar, num=self.K)
 
-        dec_mu, dec_logvar = self.decoder.forward_K(z, classes, domains)
+        dec_mu, dec_logvar = self.decoder.forward_K(z, conditions)
 
-        loss = self.loss(images, enc_mu, enc_logvar, dec_mu, dec_logvar, lamb=self.lamb)
+        loss = self.loss(images, enc_mu, enc_logvar, dec_mu, dec_logvar)
 
         self.optimizer.zero_grad()
         loss.backward()
@@ -111,15 +111,14 @@ class BIG_LM_CCVAE(Algorithm):
         return_eval_loss: If True, returns loss as 2nd value (to display in progress bar)
         """
         images = torch.cat([x["image"] for x, y in minibatches]) # (batch_size, channels, height, width)
-        classes = torch.nn.functional.one_hot(torch.cat([y for x, y in minibatches]), num_classes=self.num_classes).flatten(start_dim=1) # (batch_size, num_classes)
-        domains = torch.nn.functional.one_hot(torch.cat([x["domain"] for x, y in minibatches]), num_classes=self.num_domains).flatten(start_dim=1) # (batch_size, num_domains)
+        conditions = torch.nn.functional.one_hot(torch.cat([x["domain"] for x, y in minibatches]), num_classes=self.num_domains).flatten(start_dim=1) # (batch_size, num_classes)
 
-        enc_mu, enc_logvar = self.encoder(images, classes, domains)
+        enc_mu, enc_logvar = self.encoder(images, conditions)
         z = self.sample(enc_mu, enc_logvar, num=self.K) 
 
-        dec_mu, dec_logvar = self.decoder.forward_K(z, classes, domains)
+        dec_mu, dec_logvar = self.decoder.forward_K(z, conditions)
 
-        loss = self.loss(images, enc_mu, enc_logvar, dec_mu, dec_logvar, lamb=self.lamb)
+        loss = self.loss(images, enc_mu, enc_logvar, dec_mu, dec_logvar)
 
         if return_eval_loss:
             return {'loss': loss.item()}, loss.item()
@@ -131,8 +130,6 @@ class BIG_LM_CCVAE(Algorithm):
         Generates reconstructions of the given images and conditions
 
         images: Tensor of shape (batch_size, channels, height, width)
-        y: Tensor of shape (batch_size)
-            corresponds to int d = 0,...,6 (class)
         enc_conditions: Tensor of shape (batch_size)
             corresponds to int d = 0,...,3 (domain)
         dec_conditions: Tensor of shape (batch_size)
@@ -141,18 +138,17 @@ class BIG_LM_CCVAE(Algorithm):
         """
         self.eval()
         with torch.no_grad():
-            classes = torch.nn.functional.one_hot(y, num_classes=self.num_classes).flatten(start_dim=1) # (batch_size, num_classes)
-            dec_conditions = torch.nn.functional.one_hot(dec_conditions, num_classes=self.num_domains).flatten(start_dim=1) # (batch_size, num_domains)
-            enc_conditions = torch.nn.functional.one_hot(enc_conditions, num_classes=self.num_domains).flatten(start_dim=1) # (batch_size, num_domains)
+            enc_conditions = torch.nn.functional.one_hot(enc_conditions, num_classes=self.num_domains).flatten(start_dim=1) # (batch_size, num_classes)
+            dec_conditions = torch.nn.functional.one_hot(dec_conditions, num_classes=self.num_domains).flatten(start_dim=1) # (batch_size, num_classes)
             if raw:
-                enc_mu, enc_logvar = self.encoder(images, classes, enc_conditions)
+                enc_mu, enc_logvar = self.encoder(images, enc_conditions)
                 
-                reconstructions, dec_logvar = self.decoder(enc_mu, classes, dec_conditions)
+                reconstructions, dec_logvar = self.decoder(enc_mu, dec_conditions)
             else:
-                enc_mu, enc_logvar = self.encoder(images, classes, enc_conditions)
+                enc_mu, enc_logvar = self.encoder(images, enc_conditions)
                 z = self.sample(enc_mu, enc_logvar)
 
-                dec_mu, dec_logvar = self.decoder(z, classes, dec_conditions)
+                dec_mu, dec_logvar = self.decoder(z, dec_conditions)
                 reconstructions = self.sample(dec_mu, dec_logvar)
         self.train()
 
@@ -198,68 +194,50 @@ class BIG_LM_CCVAE(Algorithm):
 
 
 class Encoder(torch.nn.Module):
-    def __init__(self, num_classes, num_domains):
+    def __init__(self, input_size, hidden_sizes, num_domains):
         """
         Initializes the encoder.
 
-        num_classes: Number of classes, usually 7
-        num_domains: Number of domains, usually 4 or 3 (without sketch)
+        input_size: int M = channels * height * width
+        hidden_sizes: List of ints with the sizes of the different hidden layers [l1, l2, ...]
+        num_domains: Number of domains, usually 4
         """
         super().__init__()
-        self.num_classes = num_classes
-        self.num_domains = num_domains
         self.conv_sequential = torch.nn.Sequential(
-            torch.nn.Conv2d(in_channels=3 + self.num_classes + self.num_domains, out_channels=512, kernel_size=3, padding=1),
+            torch.nn.Conv2d(in_channels=3, out_channels=8, kernel_size=3, padding=1),
             torch.nn.ReLU(),
-            torch.nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1),
+            torch.nn.MaxPool2d(kernel_size=2),  # (N, 8, 112, 112)
+            torch.nn.Conv2d(in_channels=8, out_channels=16, kernel_size=3, padding=1),
             torch.nn.ReLU(),
-            torch.nn.MaxPool2d(kernel_size=2),  # (N, 512, 112, 112)
-            torch.nn.Conv2d(in_channels=512, out_channels=1024, kernel_size=3, padding=1),
+            torch.nn.MaxPool2d(kernel_size=2),  # (N, 16, 56, 56)
+            torch.nn.Conv2d(in_channels=16, out_channels=32, kernel_size=3, padding=1),
             torch.nn.ReLU(),
-            torch.nn.Conv2d(in_channels=1024, out_channels=1024, kernel_size=3, padding=1),
-            torch.nn.ReLU(),
-            torch.nn.MaxPool2d(kernel_size=2),  # (N, 1024, 56, 56)
-            torch.nn.Conv2d(in_channels=1024, out_channels=1024, kernel_size=3, padding=1),
-            torch.nn.ReLU(),
-            torch.nn.Conv2d(in_channels=1024, out_channels=1024, kernel_size=3, padding=1),
-            torch.nn.ReLU(),
-            torch.nn.MaxPool2d(kernel_size=2),  # (N, 1024, 28, 28)
-            torch.nn.Conv2d(in_channels=1024, out_channels=2048, kernel_size=3, padding=1),
-            torch.nn.ReLU(),
-            torch.nn.Conv2d(in_channels=2048, out_channels=2048, kernel_size=3, padding=1),
-            torch.nn.ReLU(),
-            torch.nn.MaxPool2d(kernel_size=2),  # (N, 2048, 14, 14)
-            torch.nn.Conv2d(in_channels=2048, out_channels=2048, kernel_size=3, padding=1),
-            torch.nn.ReLU(),
-            torch.nn.Conv2d(in_channels=2048, out_channels=2048, kernel_size=3, padding=1),
-            torch.nn.ReLU(),
-            torch.nn.MaxPool2d(kernel_size=2),  # (N, 2048, 7, 7)
-            torch.nn.Conv2d(in_channels=2048, out_channels=1024, kernel_size=3, padding=1),
-            torch.nn.ReLU(),
-            torch.nn.Conv2d(in_channels=1024, out_channels=512, kernel_size=3, padding=1),
-            torch.nn.ReLU(),
-            torch.nn.Conv2d(in_channels=512, out_channels=256, kernel_size=3, padding=1),
-            torch.nn.ReLU(),
-            torch.nn.Conv2d(in_channels=256, out_channels=128, kernel_size=3, padding=1),
-            torch.nn.ReLU(),  # (N, 128, 7, 7)
+            torch.nn.MaxPool2d(kernel_size=2),  # (N, 32, 28, 28)
         )
         self.flatten = torch.nn.Flatten()
-        self.get_mu = torch.nn.Linear(6272, 512)
-        self.get_logvar = torch.nn.Linear(6272, 512)
+        modules = []
+        for i, out_size in enumerate(hidden_sizes[:-1]):
+            if i == 0:
+                modules.append(torch.nn.Linear(25088 + num_domains, out_size))
+                modules.append(torch.nn.ReLU())
+            else:
+                modules.append(torch.nn.Linear(hidden_sizes[i-1], out_size))
+                modules.append(torch.nn.ReLU())
+        self.linear_sequential = torch.nn.Sequential(*modules)
+        self.get_mu = torch.nn.Linear(hidden_sizes[-2], hidden_sizes[-1])
+        self.get_logvar = torch.nn.Linear(hidden_sizes[-2], hidden_sizes[-1])
 
-    def forward(self, images, classes, domains):
+    def forward(self, images, conditions):
         """
         Calculates mean and diagonal log-variance of p(z | x).
 
         images: Tensor of shape (batch_size, channels, height, width)
-        classes: Tensor of shape (batch_size, num_classes)
-        domains: Tensor of shape (batch_size, num_domains)
+        conditions: Tensor of shape (batch_size, num_domains)
         """
-        class_conds = torch.ones(size=(images.shape[0], self.classes, 224, 224)) * classes.view(images.shape[0], self.num_classes, 1, 1)
-        domain_conds = torch.ones(size=(images.shape[0], self.num_domains, 224, 224)) * domains.view(images.shape[0], self.num_domains, 1, 1)
-        x = torch.cat((images, class_conds, domain_conds), dim=1)
-        x = self.conv_sequential(x)
+        x = self.conv_sequential(images)
         x = self.flatten(x)
+        x = torch.cat((x, conditions), dim=1)
+        x = self.linear_sequential(x)
         enc_mu = self.get_mu(x)
         enc_logvar = self.get_logvar(x)
 
@@ -267,71 +245,54 @@ class Encoder(torch.nn.Module):
 
 
 class Decoder(torch.nn.Module):
-    def __init__(self, num_classes, num_domains):
+    def __init__(self, input_size, hidden_sizes, num_domains):
         """
         Initializes the decoder.
 
-        num_classes: Number of classes, usually 7
-        num_domains: Number of domains, usually 4 or 3 (without sketch)
+        input_size: int M = channels * height * width
+        hidden_sizes: List of ints with the sizes of the different hidden layers [l1, l2, ...]
+        num_domains: number of domains, usually 4
         """
         super().__init__()
-        self.num_classes = num_classes
-        self.num_domains = num_domains
-        self.linear = torch.nn.Linear(512 + self.num_classes + self.num_domains, 6272)
-        self.reshape = lambda x : x.view(-1, 128, 7, 7)
+        modules = []
+        for i, out_size in enumerate(hidden_sizes[::-1]):
+            if i == 0:
+                modules.append(torch.nn.Linear(out_size + num_domains, hidden_sizes[::-1][i+1]))
+                modules.append(torch.nn.ReLU())
+            elif i == len(hidden_sizes) - 1:
+                modules.append(torch.nn.Linear(out_size, 25088))
+                modules.append(torch.nn.ReLU())
+            else:
+                modules.append(torch.nn.Linear(out_size, hidden_sizes[::-1][i+1]))
+                modules.append(torch.nn.ReLU())
+        self.linear_sequential = torch.nn.Sequential(*modules)
+        self.reshape = lambda x : x.view(-1, 32, 28, 28)
         self.conv_sequential = torch.nn.Sequential(
-            torch.nn.ConvTranspose2d(in_channels=128, out_channels=256, kernel_size=3, padding=1),
-            torch.nn.ReLU(),
-            torch.nn.ConvTranspose2d(in_channels=256, out_channels=512, kernel_size=3, padding=1),
-            torch.nn.ReLU(),
-            torch.nn.ConvTranspose2d(in_channels=512, out_channels=1024, kernel_size=3, padding=1),
-            torch.nn.ReLU(),
-            torch.nn.ConvTranspose2d(in_channels=1024, out_channels=2048, kernel_size=3, padding=1),
-            torch.nn.ReLU(),  # (N, 2048, 7, 7)
             torch.nn.Upsample(scale_factor=2, mode="nearest"),
-            torch.nn.ConvTranspose2d(in_channels=2048, out_channels=2048, kernel_size=3, padding=1),
-            torch.nn.ReLU(),
-            torch.nn.ConvTranspose2d(in_channels=2048, out_channels=2048, kernel_size=3, padding=1),
-            torch.nn.ReLU(),  # (N, 2048, 14, 14)
+            torch.nn.ConvTranspose2d(in_channels=32, out_channels=16, kernel_size=3, padding=1),
+            torch.nn.ReLU(),  # (N, 16, 56, 56)
             torch.nn.Upsample(scale_factor=2, mode="nearest"),
-            torch.nn.ConvTranspose2d(in_channels=2048, out_channels=2048, kernel_size=3, padding=1),
-            torch.nn.ReLU(),
-            torch.nn.ConvTranspose2d(in_channels=2048, out_channels=1024, kernel_size=3, padding=1),
-            torch.nn.ReLU(),  # (N, 1024, 28, 28)
-            torch.nn.Upsample(scale_factor=2, mode="nearest"),
-            torch.nn.ConvTranspose2d(in_channels=1024, out_channels=1024, kernel_size=3, padding=1),
-            torch.nn.ReLU(),
-            torch.nn.ConvTranspose2d(in_channels=1024, out_channels=1024, kernel_size=3, padding=1),
-            torch.nn.ReLU(),  # (N, 1024, 56, 56)
-            torch.nn.Upsample(scale_factor=2, mode="nearest"),
-            torch.nn.ConvTranspose2d(in_channels=1024, out_channels=1024, kernel_size=3, padding=1),
-            torch.nn.ReLU(),
-            torch.nn.ConvTranspose2d(in_channels=1024, out_channels=512, kernel_size=3, padding=1),
-            torch.nn.ReLU(),  # (N, 512, 112, 112)
+            torch.nn.ConvTranspose2d(in_channels=16, out_channels=8, kernel_size=3, padding=1),
+            torch.nn.ReLU(),  # (N, 8, 112, 112)
         )
         self.get_mu = torch.nn.Sequential(
             torch.nn.Upsample(scale_factor=2, mode="nearest"),
-            torch.nn.ConvTranspose2d(in_channels=512, out_channels=512, kernel_size=3, padding=1),
-            torch.nn.ReLU(),
-            torch.nn.ConvTranspose2d(in_channels=512, out_channels=3, kernel_size=3, padding=1),  # (N, 3, 224, 224)
+            torch.nn.ConvTranspose2d(in_channels=8, out_channels=3, kernel_size=3, padding=1),  # (N, 3, 224, 224)
         )
         self.get_logvar = torch.nn.Sequential(
             torch.nn.Upsample(scale_factor=2, mode="nearest"),
-            torch.nn.ConvTranspose2d(in_channels=512, out_channels=512, kernel_size=3, padding=1),
-            torch.nn.ReLU(),
-            torch.nn.ConvTranspose2d(in_channels=512, out_channels=3, kernel_size=3, padding=1),  # (N, 3, 224, 224)
+            torch.nn.ConvTranspose2d(in_channels=8, out_channels=3, kernel_size=3, padding=1),  # (N, 3, 224, 224)
         )
 
-    def forward(self, codes, classes, domains):
+    def forward(self, codes, conditions):
         """
         Calculates mean and diagonal log-variance of p(x | z).
 
         codes: Tensor of shape (batch_size, D) -> D = dimension of z
-        classes: Tensor of shape (batch_size, num_classes)
-        domains: Tensor of shape (batch_size, num_domains)
+        conditions: Tensor of shape (batch_size, num_domains)
         """
-        x = torch.cat((codes, classes, domains), dim=1)
-        x = self.linear(x)
+        x = torch.cat((codes, conditions), dim=1)
+        x = self.linear_sequential(x)
         x = self.reshape(x)
         x = self.conv_sequential(x)
         dec_mu = self.get_mu(x)
@@ -339,20 +300,18 @@ class Decoder(torch.nn.Module):
 
         return dec_mu, dec_logvar
     
-    def forward_K(self, codes, classes, domains):
+    def forward_K(self, codes, conditions):
         """
         Calculates mean and diagonal log-variance of p(x | z).
 
         codes: Tensor of shape (batch_size, K, D) -> K = number of samples generated, D = dimension of z
-        classes: Tensor of shape (batch_size, num_classes)
-        domains: Tensor of shape (batch_size, num_domains)
+        conditions: Tensor of shape (batch_size, num_domains)
         """
         batch_size = codes.shape[0]
         K = codes.shape[1]
-        class_conds = torch.stack([classes for i in range(K)], dim=1) # (batch_size, K, num_classes)
-        domain_conds = torch.stack([domains for i in range(K)], dim=1) # (batch_size, K, num_domains)
-        x = torch.cat((codes, class_conds, domain_conds), dim=2).view(batch_size * K, -1) # (batch_size * K, D + num_classes + num_domains)
-        x = self.linear(x)
+        conditions = torch.stack([conditions for i in range(K)], dim=1) # (batch_size, K, num_domains)
+        x = torch.cat((codes, conditions), dim=2).view(batch_size * K, -1) # (batch_size * K, D + num_domains)
+        x = self.linear_sequential(x)
         x = self.reshape(x)
         x = self.conv_sequential(x)
         dec_mu = self.get_mu(x).view(batch_size, K, 3, 224, 224)
@@ -369,7 +328,7 @@ class ELBOLoss(torch.nn.Module):
         super().__init__()
         self.flat_K = lambda x, N, K : x.view(N, K, -1)
 
-    def forward(self, x, enc_mu, enc_logvar, dec_mu, dec_logvar, lamb=1):
+    def forward(self, x, enc_mu, enc_logvar, dec_mu, dec_logvar):
         """
         Calculates the ELBO Loss (negative ELBO).
 
@@ -378,7 +337,6 @@ class ELBOLoss(torch.nn.Module):
         enc_logvar: Tensor of shape (batch_size, D)
         dec_mu: Tensor of shape (batch_size, K, channels, height, width) -> K = number of samples for z
         dec_logvar: Tensor of shape (batch_size, K, channels, height, width)
-        lamb: optional weighing of the reconstruction part of the ELBO Loss
         """
         N = dec_mu.shape[0]
         K = dec_mu.shape[1]
@@ -396,7 +354,7 @@ class ELBOLoss(torch.nn.Module):
             ) * 0.5
             
             # likelihood -> similarity
-            + lamb * torch.mean(
+            + torch.mean(
                 torch.sum(
                     (x - dec_mu) ** 2 / (2 * dec_logvar.exp()) + 0.5 * dec_logvar,
                     dim=2
@@ -425,7 +383,7 @@ if __name__ == "__main__":
         y = torch.randint(low=0, high=7, size=(batch_size,))
         minibatches.append((x, y))
 
-    cvae = BIG_LM_CCVAE(input_shape=input_shape, num_classes=num_classes,
+    cvae = LM_CCVAE(input_shape=input_shape, num_classes=num_classes,
                    num_domains=num_domains, hparams=hparams)
     print(cvae)
     """
