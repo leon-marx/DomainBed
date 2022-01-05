@@ -6,6 +6,7 @@ import torch
 # Own imports:
 from domainbed.lm.cvae import LM_CVAE
 from domainbed.lm.conv_cvae import LM_CCVAE
+from domainbed.lm.big_ccvae import BIG_LM_CCVAE
 from domainbed.lm.dataset import LM_PACS
 from domainbed.lib.fast_data_loader import FastDataLoader
 
@@ -42,11 +43,14 @@ hparams["ckpt_path"] = ckpt_path
 args = checkpoint["args"]
 
 dataset = LM_PACS(args["data_dir"], args["test_envs"], hparams)
-if "CCVAE" in ckpt_path:
+if "DB_CCVAE" in ckpt_path:
     model = LM_CCVAE(input_shape=input_shape, num_classes=num_classes,
                     num_domains=num_domains, hparams=hparams)
-elif "CVAE" in ckpt_path:
+elif "DB_CVAE" in ckpt_path:
     model = LM_CVAE(input_shape=input_shape, num_classes=num_classes,
+                    num_domains=num_domains, hparams=hparams)
+elif "DB_BIG_CCVAE" in ckpt_path:
+    model = BIG_LM_CCVAE(input_shape=input_shape, num_classes=num_classes,
                     num_domains=num_domains, hparams=hparams)
 
 eval_minibatches_iterator = zip(*[FastDataLoader(dataset=env, batch_size=4,
@@ -73,16 +77,20 @@ if mode == "ae":
         dec_conditions = batch[0]["domain"]
         reconstructions = model.run(images, enc_conditions, dec_conditions, raw=raw)
 
+        fig = plt.figure(figsize=(16, 8))
+        fig.suptitle(cond_dict[i], fontsize=24)
         for j in range(reconstructions.shape[0]):
             image_plt = make_plottable(images[j])
             reconstruction_plt = make_plottable(reconstructions[j])
-
-            plt.figure(figsize=(8, 4))
-            plt.subplot(1, 2, 1)
+            plt.subplot(2, 4, 1+j)
+            plt.xticks([])
+            plt.yticks([])
             plt.imshow(image_plt)
-            plt.subplot(1, 2, 2)
+            plt.subplot(2, 4, 5+j)
+            plt.xticks([])
+            plt.yticks([])
             plt.imshow(reconstruction_plt)
-            plt.show()
+        plt.show()
 elif mode == "ae_dec_switch":
     for batch in next(eval_minibatches_iterator):
         images = batch[0]["image"]

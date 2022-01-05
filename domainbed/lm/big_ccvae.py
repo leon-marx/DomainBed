@@ -27,7 +27,7 @@ class Algorithm(torch.nn.Module):
         raise NotImplementedError
 
 
-class BIG_LM_CCVAE(Algorithm):
+class LM_CCVAE(Algorithm):
     def __init__(self, input_shape, num_classes, num_domains, hparams):
         """
         Initializes the conditional variational autoencoder.
@@ -204,64 +204,31 @@ class Encoder(torch.nn.Module):
         """
         super().__init__()
         self.conv_sequential = torch.nn.Sequential(
-            torch.nn.Conv2d(in_channels=3, out_channels=64, kernel_size=7, padding=3, stride=2),  # (N, 64, 112, 112)
-            torch.nn.BatchNorm2d(64),
+            torch.nn.Conv2d(in_channels=3, out_channels=32, kernel_size=3, padding=1),
             torch.nn.ReLU(),
-
+            torch.nn.Conv2d(in_channels=32, out_channels=32, kernel_size=3, padding=1),
+            torch.nn.ReLU(),
+            torch.nn.MaxPool2d(kernel_size=2),  # (N, 32, 112, 112)
+            torch.nn.Conv2d(in_channels=32, out_channels=64, kernel_size=3, padding=1),
+            torch.nn.ReLU(),
+            torch.nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, padding=1),
+            torch.nn.ReLU(),
             torch.nn.MaxPool2d(kernel_size=2),  # (N, 64, 56, 56)
-            torch.nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, padding=1),
-            torch.nn.BatchNorm2d(64),
-            torch.nn.ReLU(),
-            torch.nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, padding=1),
-            torch.nn.BatchNorm2d(64),
-            torch.nn.ReLU(),
-            torch.nn.Conv2d(in_channels=64, out_channels=64, kernel_size=3, padding=1),
-            torch.nn.BatchNorm2d(64),
-            torch.nn.ReLU(),
-
-            torch.nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, padding=1, stride=2),  # (N, 128, 28, 28)
-            torch.nn.BatchNorm2d(128),
+            torch.nn.Conv2d(in_channels=64, out_channels=128, kernel_size=3, padding=1),
             torch.nn.ReLU(),
             torch.nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1),
-            torch.nn.BatchNorm2d(128),
             torch.nn.ReLU(),
-            torch.nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1),
-            torch.nn.BatchNorm2d(128),
-            torch.nn.ReLU(),
-            torch.nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1),
-            torch.nn.BatchNorm2d(128),
-            torch.nn.ReLU(),
-            torch.nn.Conv2d(in_channels=128, out_channels=128, kernel_size=3, padding=1),
-            torch.nn.BatchNorm2d(128),
-            torch.nn.ReLU(),
-
-            torch.nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, padding=1, stride=2),  # (N, 256, 14, 14)
-            torch.nn.BatchNorm2d(256),
+            torch.nn.MaxPool2d(kernel_size=2),  # (N, 128, 28, 28)
+            torch.nn.Conv2d(in_channels=128, out_channels=256, kernel_size=3, padding=1),
             torch.nn.ReLU(),
             torch.nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1),
-            torch.nn.BatchNorm2d(256),
             torch.nn.ReLU(),
-            torch.nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1),
-            torch.nn.BatchNorm2d(256),
-            torch.nn.ReLU(),
-            torch.nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1),
-            torch.nn.BatchNorm2d(256),
-            torch.nn.ReLU(),
-            torch.nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1),
-            torch.nn.BatchNorm2d(256),
-            torch.nn.ReLU(),
-            torch.nn.Conv2d(in_channels=256, out_channels=256, kernel_size=3, padding=1),
-            torch.nn.BatchNorm2d(256),
-            torch.nn.ReLU(),
-
-            torch.nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3, padding=1, stride=2),  # (N, 512, 7, 7)
-            torch.nn.BatchNorm2d(512),
+            torch.nn.MaxPool2d(kernel_size=2),  # (N, 256, 14, 14)
+            torch.nn.Conv2d(in_channels=256, out_channels=512, kernel_size=3, padding=1),
             torch.nn.ReLU(),
             torch.nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1),
-            torch.nn.BatchNorm2d(512),
             torch.nn.ReLU(),
-            torch.nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1),
-            torch.nn.BatchNorm2d(512),
+            torch.nn.MaxPool2d(kernel_size=2),  # (N, 512, 7, 7)
         )
         self.flatten = torch.nn.Flatten()
         modules = []
@@ -315,74 +282,45 @@ class Decoder(torch.nn.Module):
                 modules.append(torch.nn.Linear(out_size, hidden_sizes[::-1][i+1]))
                 modules.append(torch.nn.ReLU())
         self.linear_sequential = torch.nn.Sequential(*modules)
-        self.reshape = lambda x : x.view(-1, 512, 7, 7)
+        self.reshape = lambda x : x.view(-1, 32, 28, 28)
         self.conv_sequential = torch.nn.Sequential(
+            torch.nn.Upsample(scale_factor=2, mode="nearest"),
             torch.nn.ConvTranspose2d(in_channels=512, out_channels=512, kernel_size=3, padding=1),
-            torch.nn.BatchNorm2d(512),
             torch.nn.ReLU(),
-            torch.nn.ConvTranspose2d(in_channels=512, out_channels=512, kernel_size=3, padding=1),
-            torch.nn.BatchNorm2d(512),
-            torch.nn.ReLU(),
+            torch.nn.ConvTranspose2d(in_channels=512, out_channels=256, kernel_size=3, padding=1),
+            torch.nn.ReLU(),  # (N, 256, 14, 14)
             torch.nn.Upsample(scale_factor=2, mode="nearest"),
-            torch.nn.ConvTranspose2d(in_channels=512, out_channels=256, kernel_size=3, padding=1),  # (N, 256, 14, 14)
-            torch.nn.BatchNorm2d(256),
-            torch.nn.ReLU(),
-            
             torch.nn.ConvTranspose2d(in_channels=256, out_channels=256, kernel_size=3, padding=1),
-            torch.nn.BatchNorm2d(256),
             torch.nn.ReLU(),
-            torch.nn.ConvTranspose2d(in_channels=256, out_channels=256, kernel_size=3, padding=1),
-            torch.nn.BatchNorm2d(256),
-            torch.nn.ReLU(),
-            torch.nn.ConvTranspose2d(in_channels=256, out_channels=256, kernel_size=3, padding=1),
-            torch.nn.BatchNorm2d(256),
-            torch.nn.ReLU(),
-            torch.nn.ConvTranspose2d(in_channels=256, out_channels=256, kernel_size=3, padding=1),
-            torch.nn.BatchNorm2d(256),
-            torch.nn.ReLU(),
-            torch.nn.ConvTranspose2d(in_channels=256, out_channels=256, kernel_size=3, padding=1),
-            torch.nn.BatchNorm2d(256),
-            torch.nn.ReLU(),
+            torch.nn.ConvTranspose2d(in_channels=256, out_channels=128, kernel_size=3, padding=1),
+            torch.nn.ReLU(),  # (N, 128, 28, 28)
             torch.nn.Upsample(scale_factor=2, mode="nearest"),
-            torch.nn.ConvTranspose2d(in_channels=256, out_channels=128, kernel_size=3, padding=1),  # (N, 128, 28, 28)
-            torch.nn.BatchNorm2d(128),
-            torch.nn.ReLU(),
-
             torch.nn.ConvTranspose2d(in_channels=128, out_channels=128, kernel_size=3, padding=1),
-            torch.nn.BatchNorm2d(128),
             torch.nn.ReLU(),
-            torch.nn.ConvTranspose2d(in_channels=128, out_channels=128, kernel_size=3, padding=1),
-            torch.nn.BatchNorm2d(128),
-            torch.nn.ReLU(),
-            torch.nn.ConvTranspose2d(in_channels=128, out_channels=128, kernel_size=3, padding=1),
-            torch.nn.BatchNorm2d(128),
-            torch.nn.ReLU(),
-            torch.nn.ConvTranspose2d(in_channels=128, out_channels=128, kernel_size=3, padding=1),
-            torch.nn.BatchNorm2d(128),
-            torch.nn.ReLU(),
+            torch.nn.ConvTranspose2d(in_channels=128, out_channels=64, kernel_size=3, padding=1),
+            torch.nn.ReLU(),  # (N, 64, 56, 56)
             torch.nn.Upsample(scale_factor=2, mode="nearest"),
-            torch.nn.ConvTranspose2d(in_channels=128, out_channels=64, kernel_size=3, padding=1),  # (N, 64, 56, 56)
-            torch.nn.BatchNorm2d(64),
-            torch.nn.ReLU(),
-
             torch.nn.ConvTranspose2d(in_channels=64, out_channels=64, kernel_size=3, padding=1),
-            torch.nn.BatchNorm2d(64),
             torch.nn.ReLU(),
-            torch.nn.ConvTranspose2d(in_channels=64, out_channels=64, kernel_size=3, padding=1),
-            torch.nn.BatchNorm2d(64),
+            torch.nn.ConvTranspose2d(in_channels=64, out_channels=32, kernel_size=3, padding=1),
+            torch.nn.ReLU(),  # (N, 32, 112, 112)
+            torch.nn.Upsample(scale_factor=2, mode="nearest"),
+            torch.nn.ConvTranspose2d(in_channels=32, out_channels=32, kernel_size=3, padding=1),
             torch.nn.ReLU(),
-            torch.nn.ConvTranspose2d(in_channels=64, out_channels=64, kernel_size=3, padding=1),
-            torch.nn.BatchNorm2d(64),
-            torch.nn.ReLU(),
-            torch.nn.Upsample(scale_factor=2, mode="nearest"),  # (N, 64, 112, 112)
+            torch.nn.ConvTranspose2d(in_channels=32, out_channels=3, kernel_size=3, padding=1),
+            torch.nn.ReLU(),  # (N, 3, 224, 224)
         )
         self.get_mu = torch.nn.Sequential(
-            torch.nn.Upsample(scale_factor=2, mode="nearest"),  # (N, 64, 224, 224)
-            torch.nn.ConvTranspose2d(in_channels=64, out_channels=3, kernel_size=7, padding=3),  # (N, 3, 224, 224)
+            torch.nn.Upsample(scale_factor=2, mode="nearest"),
+            torch.nn.ConvTranspose2d(in_channels=32, out_channels=32, kernel_size=3, padding=1),
+            torch.nn.ReLU(),
+            torch.nn.ConvTranspose2d(in_channels=32, out_channels=3, kernel_size=3, padding=1),  # (N, 3, 224, 224)
         )
         self.get_logvar = torch.nn.Sequential(
-            torch.nn.Upsample(scale_factor=2, mode="nearest"),  # (N, 64, 224, 224)
-            torch.nn.ConvTranspose2d(in_channels=64, out_channels=3, kernel_size=7, padding=3),  # (N, 3, 224, 224)
+            torch.nn.Upsample(scale_factor=2, mode="nearest"),
+            torch.nn.ConvTranspose2d(in_channels=32, out_channels=32, kernel_size=3, padding=1),
+            torch.nn.ReLU(),
+            torch.nn.ConvTranspose2d(in_channels=32, out_channels=3, kernel_size=3, padding=1),  # (N, 3, 224, 224)
         )
 
     def forward(self, codes, conditions):
@@ -470,9 +408,9 @@ if __name__ == "__main__":
     input_shape = (3, 224, 224)
     num_classes = 7
     num_domains = 3
-    hparams = {"hidden_sizes": "[1024,512]",
-               "K": 10,
-               "ckpt_path": None,
+    hparams = {"hidden_sizes": "[1024,512,128]",
+               "K": 25,
+               "ckpt_path": "C:/users/gooog/desktop/bachelor/code/bachelor/logs/DB_test_2/model.pkl",
                "lr": 5e-05,
                "weight_decay": 0.0,
                "batch_size": 8}
@@ -484,10 +422,12 @@ if __name__ == "__main__":
         y = torch.randint(low=0, high=7, size=(batch_size,))
         minibatches.append((x, y))
 
-    cvae = BIG_LM_CCVAE(input_shape=input_shape, num_classes=num_classes,
+    cvae = LM_CCVAE(input_shape=input_shape, num_classes=num_classes,
                    num_domains=num_domains, hparams=hparams)
     print(cvae)
+    """
     step_vals = cvae.update(minibatches=minibatches)
     step_vals, train_loss = cvae.update(
         minibatches=minibatches, return_train_loss=True)
     print(step_vals, train_loss)
+    """

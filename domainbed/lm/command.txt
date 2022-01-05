@@ -1,15 +1,16 @@
 python -m domainbed.scripts.train\
        --algorithm BIG_LM_CCVAE\
        --hidden_sizes "[1024,512]"\
-       --K 10\
+       --K 3\
+       --ckpt_path ./../logs/DB_BIG_CCVAE_1/best_model.pkl\
        --lr 1e-06\
        --dataset LM_PACS\
        --data_dir ./../data/\
-       --output_dir ./../logs/DB_BIG_CCVAE_1/\
+       --output_dir ./../logs/DB_BIG_CCVAE_2/\
        --test_env 2\
-       --gpu 2\
-       --steps 100\
-       --checkpoint_freq 10\
+       --gpu 3\
+       --steps 100000\
+       --checkpoint_freq 1000\
        --save_best_every_checkpoint
 
 
