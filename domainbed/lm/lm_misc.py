@@ -11,5 +11,5 @@ def accuracy(network, loader, weights, device):
             y = y.to(device)
             _, loss = network.evaluate(minibatches=[(x, y)], return_eval_loss=True)
             total += loss
-            network.train()
+        network.train()
         return 1 / (1 + total)
