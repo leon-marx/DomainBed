@@ -4,10 +4,10 @@ from tqdm import tqdm
 def accuracy(network, loader, weights, device):
 
     network.eval()
+    total = 0
     with torch.no_grad():
-        print("Evaluating")
-        total = 0
-        for x, y in tqdm(loader):
+        progress_bar = tqdm(loader, desc="Evaluation")
+        for x, y in progress_bar:
             x["image"] = x["image"].to(device)
             x["domain"] = x["domain"].to(device)
             y = y.to(device)
