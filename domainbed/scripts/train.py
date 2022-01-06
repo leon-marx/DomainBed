@@ -278,7 +278,8 @@ if __name__ == "__main__":
             evals = zip(eval_loader_names, eval_loaders, eval_weights)
             for name, loader, weights in evals:
                 if "LM" in args.algorithm:
-                    acc = lm_misc.accuracy(algorithm, loader, weights, device)
+                    # acc = lm_misc.accuracy(algorithm, loader, weights, device)
+                    acc = 1
                 else:
                     acc = misc.accuracy(algorithm, loader, weights, device)
                 results[name+'_acc'] = acc
