@@ -275,13 +275,12 @@ if __name__ == "__main__":
                 results[key] = np.mean(val)
 
             evals = zip(eval_loader_names, eval_loaders, eval_weights)
-            with torch.no_grad():
-                for name, loader, weights in evals:
-                    if "LM" in args.algorithm:
-                        acc = lm_misc.accuracy(algorithm, loader, weights, device)
-                    else:
-                        acc = misc.accuracy(algorithm, loader, weights, device)
-                    results[name+'_acc'] = acc
+            for name, loader, weights in evals:
+                if "LM" in args.algorithm:
+                    acc = 1#lm_misc.accuracy(algorithm, loader, weights, device)
+                else:
+                    acc = misc.accuracy(algorithm, loader, weights, device)
+                results[name+'_acc'] = acc
 
             results['mem_gb'] = torch.cuda.max_memory_allocated() / \
                 (1024.*1024.*1024.)
