@@ -255,7 +255,9 @@ if __name__ == "__main__":
         else:
             uda_device = None
         if "LM" in args.dataset:
+            print("UPDATE ABOUT TO BE CALLED")
             step_vals, step_train_loss = algorithm.update(minibatches_device, uda_device, return_train_loss=True)
+            print("UPDATE CALLED")
             train_loss.pop(0)
             train_loss.append(step_train_loss)
         else:
