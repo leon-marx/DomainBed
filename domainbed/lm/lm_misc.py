@@ -1,11 +1,13 @@
 import torch
+from tqdm import tqdm
 
 def accuracy(network, loader, weights, device):
 
     network.eval()
     with torch.no_grad():
+        print("Evaluating")
         total = 0
-        for x, y in loader:
+        for x, y in tqdm(loader):
             x["image"] = x["image"].to(device)
             x["domain"] = x["domain"].to(device)
             y = y.to(device)
