@@ -1,6 +1,6 @@
 import torch
 
-def old_accuracy(network, loader, weights, device):
+def accuracy(network, loader, weights, device):
 
     network.eval()
     with torch.no_grad():
@@ -13,7 +13,4 @@ def old_accuracy(network, loader, weights, device):
             total += loss
     network.train()
     return 1 / (1 + total)
-
-def accuracy(network, loader, weights, device):
-    total = 0
-    return 1 / (1 + total)
+    

@@ -188,7 +188,8 @@ if __name__ == "__main__":
 
     eval_loaders = [FastDataLoader(
         dataset=env,
-        batch_size=64,
+        # batch_size=64,   # MEMORY EATER
+        batch_size=hparams['batch_size'],
         num_workers=dataset.N_WORKERS)
         for env, _ in (in_splits + out_splits + uda_splits)]
     eval_weights = [None for _, weights in (
@@ -255,9 +256,7 @@ if __name__ == "__main__":
         else:
             uda_device = None
         if "LM" in args.dataset:
-            print("UPDATE ABOUT TO BE CALLED")
             step_vals, step_train_loss = algorithm.update(minibatches_device, uda_device, return_train_loss=True)
-            print("UPDATE CALLED")
             train_loss.pop(0)
             train_loss.append(step_train_loss)
         else:
@@ -279,7 +278,7 @@ if __name__ == "__main__":
             evals = zip(eval_loader_names, eval_loaders, eval_weights)
             for name, loader, weights in evals:
                 if "LM" in args.algorithm:
-                    acc = 1#lm_misc.accuracy(algorithm, loader, weights, device)
+                    acc = lm_misc.accuracy(algorithm, loader, weights, device)
                 else:
                     acc = misc.accuracy(algorithm, loader, weights, device)
                 results[name+'_acc'] = acc

@@ -34,22 +34,29 @@ class MultipleDomainDataset:
         return len(self.datasets)
 
 class MultipleEnvironmentImageFolder(MultipleDomainDataset):
-    def __init__(self, root, test_envs, augment, hparams):
+    def __init__(self, root, test_envs, augment, hparams, ENVIRONMENTS):
         super().__init__()
         self.test_envs = test_envs
         environments = [f.name for f in os.scandir(root) if f.is_dir()]
         environments = sorted(environments)
+        env_dict = {
+            0: "A",
+            1: "C",
+            2: "P",
+            3: "S"
+        }
 
         self.datasets = []
         for i, environment in enumerate(environments):
+            if env_dict[i] in ENVIRONMENTS:
 
-            env_transform = self.get_transforms(i, augment)
+                env_transform = self.get_transforms(i, augment)
 
-            path = os.path.join(root, environment)
-            env_dataset = ImageFolder(path,
-                transform=env_transform)
+                path = os.path.join(root, environment)
+                env_dataset = ImageFolder(path,
+                    transform=env_transform)
 
-            self.datasets.append(env_dataset)
+                self.datasets.append(env_dataset)
 
         self.input_shape = (3, 224, 224,)
         self.num_classes = len(self.datasets[-1].classes)
@@ -79,15 +86,15 @@ class MultipleEnvironmentImageFolder(MultipleDomainDataset):
 
 class LM_PACS(MultipleEnvironmentImageFolder):
     CHECKPOINT_FREQ = 300
-    ENVIRONMENTS = ["A", "C", "P"]
     def __init__(self, root, test_envs, hparams):
+        self.ENVIRONMENTS = ["A", "C", "P"]
         self.dir = os.path.join(root, "PACS/")
-        super().__init__(self.dir, test_envs, hparams['data_augmentation'], hparams)
+        super().__init__(self.dir, test_envs, hparams['data_augmentation'], hparams, self.ENVIRONMENTS)
 
 class LM_PACS_Debug(MultipleEnvironmentImageFolder):
     CHECKPOINT_FREQ = 300
     N_WORKERS = 0
-    ENVIRONMENTS = ["A", "C", "P"]
     def __init__(self, root, test_envs, hparams):
+        self.ENVIRONMENTS = ["A", "C", "P"]
         self.dir = os.path.join(root, "PACS/")
-        super().__init__(self.dir, test_envs, hparams['data_augmentation'], hparams)
+        super().__init__(self.dir, test_envs, hparams['data_augmentation'], hparams, self.ENVIRONMENTS)
