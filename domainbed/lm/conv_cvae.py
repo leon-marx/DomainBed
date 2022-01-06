@@ -119,10 +119,10 @@ class LM_CCVAE(Algorithm):
             classes = torch.nn.functional.one_hot(torch.cat([y for x, y in minibatches]), num_classes=self.num_classes).flatten(start_dim=1) # (batch_size, num_classes)
             domains = torch.nn.functional.one_hot(torch.cat([x["domain"] for x, y in minibatches]), num_classes=self.num_domains).flatten(start_dim=1) # (batch_size, num_domains)
 
-            enc_mu, enc_logvar = self.encoder.eval(images, classes, domains)
+            enc_mu, enc_logvar = self.encoder(images, classes, domains)
             z = self.sample(enc_mu, enc_logvar, num=self.K) 
 
-            dec_mu, dec_logvar = self.decoder.forward.eval(z, classes, domains)
+            dec_mu, dec_logvar = self.decoder.forward(z, classes, domains)
 
             loss = self.loss(images, enc_mu, enc_logvar, dec_mu, dec_logvar, lamb=self.lamb).item()
 
