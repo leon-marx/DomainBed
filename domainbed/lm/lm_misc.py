@@ -32,7 +32,7 @@ def accuracy(network, loader, weights, device):
             z = network.sample(enc_mu, enc_logvar)
             dec_mu, dec_logvar = network.decoder(z, classes, domains)
 
-            loss = network.loss(images, enc_mu, enc_logvar, dec_mu, dec_logvar, lamb=network.lamb).item()
+            loss = 1# network.loss(images, enc_mu, enc_logvar, dec_mu, dec_logvar, lamb=network.lamb).item()
             total += loss
     network.train()
 
