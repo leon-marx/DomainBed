@@ -188,8 +188,8 @@ if __name__ == "__main__":
 
     eval_loaders = [FastDataLoader(
         dataset=env,
-        batch_size=64,   # MEMORY EATER
-        # batch_size=hparams['batch_size'],
+        # batch_size=64,   # original
+        batch_size=32, #  hparams['batch_size']
         num_workers=dataset.N_WORKERS)
         for env, _ in (in_splits + out_splits + uda_splits)]
     eval_weights = [None for _, weights in (
