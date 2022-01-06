@@ -113,8 +113,8 @@ class LM_CCVAE(Algorithm):
         unlabeled: This is not supported!
         return_eval_loss: If True, returns loss as 2nd value (to display in progress bar)
         """
+        self.eval()
         with torch.no_grad():
-            self.eval()
             images = torch.cat([x["image"] for x, y in minibatches]) # (batch_size, channels, height, width)
             classes = torch.nn.functional.one_hot(torch.cat([y for x, y in minibatches]), num_classes=self.num_classes).flatten(start_dim=1) # (batch_size, num_classes)
             domains = torch.nn.functional.one_hot(torch.cat([x["domain"] for x, y in minibatches]), num_classes=self.num_domains).flatten(start_dim=1) # (batch_size, num_domains)
@@ -124,13 +124,13 @@ class LM_CCVAE(Algorithm):
 
             dec_mu, dec_logvar = self.decoder.forward.eval(z, classes, domains)
 
-            loss = self.loss(images, enc_mu, enc_logvar, dec_mu, dec_logvar, lamb=self.lamb)
+            loss = self.loss(images, enc_mu, enc_logvar, dec_mu, dec_logvar, lamb=self.lamb).item()
 
-            self.train()
-            if return_eval_loss:
-                return {'loss': loss.item()}, loss.item()
-            else:
-                return {'loss': loss.item()}
+        self.train()
+        if return_eval_loss:
+            return {'loss': loss}, loss
+        else:
+            return {'loss': loss}
 
     def run(self, images, enc_conditions, dec_conditions, raw=False):
         """
@@ -145,22 +145,19 @@ class LM_CCVAE(Algorithm):
             corresponds to int d = 0,...,3 (domain)
         raw: Bool, if True no noise / variation is added
         """
-        self.eval()
-        with torch.no_grad():
-            classes = torch.nn.functional.one_hot(y, num_classes=self.num_classes).flatten(start_dim=1) # (batch_size, num_classes)
-            dec_conditions = torch.nn.functional.one_hot(dec_conditions, num_classes=self.num_domains).flatten(start_dim=1) # (batch_size, num_domains)
-            enc_conditions = torch.nn.functional.one_hot(enc_conditions, num_classes=self.num_domains).flatten(start_dim=1) # (batch_size, num_domains)
-            if raw:
-                enc_mu, enc_logvar = self.encoder(images, classes, enc_conditions)
-                
-                reconstructions, dec_logvar = self.decoder(enc_mu, classes, dec_conditions)
-            else:
-                enc_mu, enc_logvar = self.encoder(images, classes, enc_conditions)
-                z = self.sample(enc_mu, enc_logvar)
+        classes = torch.nn.functional.one_hot(y, num_classes=self.num_classes).flatten(start_dim=1) # (batch_size, num_classes)
+        dec_conditions = torch.nn.functional.one_hot(dec_conditions, num_classes=self.num_domains).flatten(start_dim=1) # (batch_size, num_domains)
+        enc_conditions = torch.nn.functional.one_hot(enc_conditions, num_classes=self.num_domains).flatten(start_dim=1) # (batch_size, num_domains)
+        if raw:
+            enc_mu, enc_logvar = self.encoder(images, classes, enc_conditions)
+            
+            reconstructions, dec_logvar = self.decoder(enc_mu, classes, dec_conditions)
+        else:
+            enc_mu, enc_logvar = self.encoder(images, classes, enc_conditions)
+            z = self.sample(enc_mu, enc_logvar)
 
-                dec_mu, dec_logvar = self.decoder(z, classes, dec_conditions)
-                reconstructions = self.sample(dec_mu, dec_logvar)
-        self.train()
+            dec_mu, dec_logvar = self.decoder(z, classes, dec_conditions)
+            reconstructions = self.sample(dec_mu, dec_logvar)
 
         return reconstructions
 
@@ -271,25 +268,6 @@ class Encoder(torch.nn.Module):
 
         return enc_mu, enc_logvar
 
-    def eval(self, images, classes, domains):
-        """
-        Calculates mean and diagonal log-variance of p(z | x).
-
-        images: Tensor of shape (batch_size, channels, height, width)
-        classes: Tensor of shape (batch_size, num_classes)
-        domains: Tensor of shape (batch_size, num_domains)
-        """
-        with torch.no_grad():
-            class_conds = torch.ones(size=(images.shape[0], self.num_classes, 224, 224)).to(images.device) * classes.view(images.shape[0], self.num_classes, 1, 1)
-            domain_conds = torch.ones(size=(images.shape[0], self.num_domains, 224, 224)).to(images.device) * domains.view(images.shape[0], self.num_domains, 1, 1)
-            x = torch.cat((images, class_conds, domain_conds), dim=1)
-            x = self.conv_sequential(x)
-            x = self.flatten(x)
-            enc_mu = self.get_mu(x)
-            enc_logvar = self.get_logvar(x)
-
-            return enc_mu, enc_logvar
-
 
 class Decoder(torch.nn.Module):
     def __init__(self, num_classes, num_domains):
@@ -363,24 +341,6 @@ class Decoder(torch.nn.Module):
         dec_logvar = self.get_logvar(x)
 
         return dec_mu, dec_logvar
-
-    def eval(self, codes, classes, domains):
-        """
-        Calculates mean and diagonal log-variance of p(x | z).
-
-        codes: Tensor of shape (batch_size, D) -> D = dimension of z
-        classes: Tensor of shape (batch_size, num_classes)
-        domains: Tensor of shape (batch_size, num_domains)
-        """
-        with torch.no_grad():
-            x = torch.cat((codes, classes, domains), dim=1)
-            x = self.linear(x)
-            x = self.reshape(x)
-            x = self.conv_sequential(x)
-            dec_mu = self.get_mu(x)
-            dec_logvar = self.get_logvar(x)
-
-            return dec_mu, dec_logvar
     
     def forward_K(self, codes, classes, domains):
         """
