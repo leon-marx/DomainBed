@@ -188,8 +188,7 @@ if __name__ == "__main__":
 
     eval_loaders = [FastDataLoader(
         dataset=env,
-        # batch_size=64,   # original
-        batch_size=16, #  hparams['batch_size']
+        batch_size=64,
         num_workers=dataset.N_WORKERS)
         for env, _ in (in_splits + out_splits + uda_splits)]
     eval_weights = [None for _, weights in (
@@ -279,7 +278,7 @@ if __name__ == "__main__":
             for name, loader, weights in evals:
                 if "LM" in args.algorithm:
                     # acc = lm_misc.accuracy(algorithm, loader, weights, device)
-                    acc = 1
+                    acc = None
                 else:
                     acc = misc.accuracy(algorithm, loader, weights, device)
                 results[name+'_acc'] = acc
