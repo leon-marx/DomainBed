@@ -383,10 +383,10 @@ class ELBOLoss(torch.nn.Module):
             (torch.sum(
                 enc_mu ** 2 + enc_logvar.exp() - enc_logvar - torch.ones(enc_mu.shape).to(x.device),
                 dim=1
-            ) * 0.5
+            ) * 0.5 * (1.0 / lamb)
             
             # likelihood -> similarity
-            + lamb * torch.mean(
+            + torch.mean(
                 torch.sum(
                     (x - dec_mu) ** 2 / (2 * dec_logvar.exp()) + 0.5 * dec_logvar,
                     dim=2
@@ -415,7 +415,7 @@ if __name__ == "__main__":
         y = torch.randint(low=0, high=7, size=(batch_size,))
         minibatches.append((x, y))
 
-    cvae = LM_CCVAE(input_shape=input_shape, num_classes=num_classes,
+    cvae = LM_CCVAE_S(input_shape=input_shape, num_classes=num_classes,
                    num_domains=num_domains, hparams=hparams)
     print(cvae)
     """
