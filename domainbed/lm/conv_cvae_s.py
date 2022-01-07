@@ -27,7 +27,7 @@ class Algorithm(torch.nn.Module):
         raise NotImplementedError
 
 
-class LM_CCVAE(Algorithm):
+class LM_CCVAE_S(Algorithm):
     def __init__(self, input_shape, num_classes, num_domains, hparams):
         """
         Initializes the conditional variational autoencoder.
@@ -228,12 +228,12 @@ class Encoder(torch.nn.Module):
             torch.nn.Conv2d(in_channels=1024, out_channels=1024, kernel_size=3, padding=1),
             torch.nn.ReLU(),
             torch.nn.MaxPool2d(kernel_size=2),  # (N, 1024, 28, 28)
+            torch.nn.Conv2d(in_channels=1024, out_channels=1024, kernel_size=3, padding=1),
+            torch.nn.ReLU(),
+            torch.nn.Conv2d(in_channels=1024, out_channels=1024, kernel_size=3, padding=1),
+            torch.nn.ReLU(),
+            torch.nn.MaxPool2d(kernel_size=2),  # (N, 1024, 14, 14)
             torch.nn.Conv2d(in_channels=1024, out_channels=2048, kernel_size=3, padding=1),
-            torch.nn.ReLU(),
-            torch.nn.Conv2d(in_channels=2048, out_channels=2048, kernel_size=3, padding=1),
-            torch.nn.ReLU(),
-            torch.nn.MaxPool2d(kernel_size=2),  # (N, 2048, 14, 14)
-            torch.nn.Conv2d(in_channels=2048, out_channels=2048, kernel_size=3, padding=1),
             torch.nn.ReLU(),
             torch.nn.Conv2d(in_channels=2048, out_channels=2048, kernel_size=3, padding=1),
             torch.nn.ReLU(),
@@ -295,12 +295,12 @@ class Decoder(torch.nn.Module):
             torch.nn.Upsample(scale_factor=2, mode="nearest"),
             torch.nn.ConvTranspose2d(in_channels=2048, out_channels=2048, kernel_size=3, padding=1),
             torch.nn.ReLU(),
-            torch.nn.ConvTranspose2d(in_channels=2048, out_channels=2048, kernel_size=3, padding=1),
-            torch.nn.ReLU(),  # (N, 2048, 14, 14)
-            torch.nn.Upsample(scale_factor=2, mode="nearest"),
-            torch.nn.ConvTranspose2d(in_channels=2048, out_channels=2048, kernel_size=3, padding=1),
-            torch.nn.ReLU(),
             torch.nn.ConvTranspose2d(in_channels=2048, out_channels=1024, kernel_size=3, padding=1),
+            torch.nn.ReLU(),  # (N, 1024, 14, 14)
+            torch.nn.Upsample(scale_factor=2, mode="nearest"),
+            torch.nn.ConvTranspose2d(in_channels=1024, out_channels=1024, kernel_size=3, padding=1),
+            torch.nn.ReLU(),
+            torch.nn.ConvTranspose2d(in_channels=1024, out_channels=1024, kernel_size=3, padding=1),
             torch.nn.ReLU(),  # (N, 1024, 28, 28)
             torch.nn.Upsample(scale_factor=2, mode="nearest"),
             torch.nn.ConvTranspose2d(in_channels=1024, out_channels=1024, kernel_size=3, padding=1),

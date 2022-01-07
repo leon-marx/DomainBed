@@ -75,9 +75,13 @@ def make_plottable(image):
 if mode == "ae":
     for i, batch in enumerate(next(eval_minibatches_iterator)):
         images = batch[0]["image"]
+        classes = batch[1]
         enc_conditions = batch[0]["domain"]
         dec_conditions = batch[0]["domain"]
-        reconstructions = model.run(images, enc_conditions, dec_conditions, raw=raw)
+        if "BIG" in ckpt_path:
+            reconstructions = model.run(images, enc_conditions, dec_conditions, raw=raw)
+        else:
+            reconstructions = model.run(images, classes, enc_conditions, dec_conditions, raw=raw)
 
         fig = plt.figure(figsize=(16, 8))
         fig.suptitle(cond_dict[i], fontsize=24)
