@@ -399,10 +399,10 @@ class ELBOLoss(torch.nn.Module):
             (torch.sum(
                 enc_mu ** 2 + enc_logvar.exp() - enc_logvar - torch.ones(enc_mu.shape).to(x.device),
                 dim=1
-            ) * 0.5
+            ) * 0.5 * (1.0 / lamb)
             
             # likelihood -> similarity
-            + lamb * torch.mean(
+            + torch.mean(
                 torch.sum(
                     (x - dec_mu) ** 2 / (2 * dec_logvar.exp()) + 0.5 * dec_logvar,
                     dim=2
