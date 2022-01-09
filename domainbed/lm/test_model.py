@@ -6,6 +6,7 @@ import torch
 # Own imports:
 from domainbed.lm.cvae import LM_CVAE
 from domainbed.lm.conv_cvae import LM_CCVAE
+from domainbed.lm.conv_cvae_s import LM_CCVAE_S
 from domainbed.lm.big_ccvae import BIG_LM_CCVAE
 from domainbed.lm.dataset import LM_PACS
 from domainbed.lib.fast_data_loader import FastDataLoader
@@ -43,14 +44,17 @@ hparams["ckpt_path"] = ckpt_path
 args = checkpoint["args"]
 
 dataset = LM_PACS(args["data_dir"], args["test_envs"], hparams)
-if "DB_CCVAE" in ckpt_path:
-    model = LM_CCVAE(input_shape=input_shape, num_classes=num_classes,
-                    num_domains=num_domains, hparams=hparams)
-elif "DB_CVAE" in ckpt_path:
+if "DB_CVAE_" in ckpt_path:
     model = LM_CVAE(input_shape=input_shape, num_classes=num_classes,
                     num_domains=num_domains, hparams=hparams)
-elif "DB_BIG_CCVAE" in ckpt_path:
+elif "DB_BIG_CCVAE_" in ckpt_path:
     model = BIG_LM_CCVAE(input_shape=input_shape, num_classes=num_classes,
+                    num_domains=num_domains, hparams=hparams)
+elif "DB_CCVAE_S_" in ckpt_path:
+    model = LM_CCVAE_S(input_shape=input_shape, num_classes=num_classes,
+                    num_domains=num_domains, hparams=hparams)
+else:
+    model = LM_CCVAE(input_shape=input_shape, num_classes=num_classes,
                     num_domains=num_domains, hparams=hparams)
 
 eval_minibatches_iterator = zip(*[FastDataLoader(dataset=env, batch_size=4,
@@ -169,6 +173,15 @@ elif mode == "gen":
             plt.yticks([])
             plt.imshow(reconstructions[j])
     plt.show()
+elif mode == "data_check":
+    while True:
+        print(".")
+        for i, batch in enumerate(next(eval_minibatches_iterator)):
+            images = batch[0]["image"]
+            if abs(images.min().item() - 0) > 0.3:
+                print("min:", images.min().item())
+            if abs(images.max().item() - 1) > 0.3:
+                print("max:", images.max().item())
 
 elif mode == "print":
     print(model)
