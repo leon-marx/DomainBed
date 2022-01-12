@@ -7,6 +7,7 @@ import torch
 from domainbed.lm.cvae import LM_CVAE
 from domainbed.lm.conv_cvae import LM_CCVAE
 from domainbed.lm.conv_cvae_s import LM_CCVAE_S
+from domainbed.lm.conv_cvae_n import LM_CCVAE_N
 from domainbed.lm.big_ccvae import BIG_LM_CCVAE
 from domainbed.lm.dataset import LM_PACS
 from domainbed.lib.fast_data_loader import FastDataLoader
@@ -53,7 +54,11 @@ elif "DB_BIG_CCVAE_" in ckpt_path:
 elif "DB_CCVAE_S_" in ckpt_path:
     model = LM_CCVAE_S(input_shape=input_shape, num_classes=num_classes,
                     num_domains=num_domains, hparams=hparams)
+elif "DB_CCVAE_N_" in ckpt_path:
+    model = LM_CCVAE_N(input_shape=input_shape, num_classes=num_classes,
+                    num_domains=num_domains, hparams=hparams)
 else:
+    print("Standart CCVAE")
     model = LM_CCVAE(input_shape=input_shape, num_classes=num_classes,
                     num_domains=num_domains, hparams=hparams)
 
@@ -104,16 +109,20 @@ if mode == "ae":
 elif mode == "ae_dec_switch":
     for batch in next(eval_minibatches_iterator):
         images = batch[0]["image"]
+        classes = batch[1]
         enc_conditions = batch[0]["domain"]
         dec_cond_list = [
             torch.ones_like(enc_conditions) * 0, 
             torch.ones_like(enc_conditions) * 1, 
             torch.ones_like(enc_conditions) * 2, 
-            torch.ones_like(enc_conditions) * 3
+            # torch.ones_like(enc_conditions) * 3
         ]
         plt.figure(figsize=(10, 8))
         for i, dec_conditions in enumerate(dec_cond_list):
-            reconstructions = model.run(images, enc_conditions, dec_conditions, raw=raw)
+            if "BIG" in ckpt_path:
+                reconstructions = model.run(images, enc_conditions, dec_conditions, raw=raw)
+            else:
+                reconstructions = model.run(images, classes, enc_conditions, dec_conditions, raw=raw)
             for j in range(reconstructions.shape[0]):
                 image_plt = make_plottable(images[j])
                 reconstruction_plt = make_plottable(reconstructions[j])
@@ -132,16 +141,20 @@ elif mode == "ae_dec_switch":
 elif mode == "ae_enc_switch":
     for batch in next(eval_minibatches_iterator):
         images = batch[0]["image"]
+        classes = batch[1]
         dec_conditions = batch[0]["domain"]
         enc_cond_list = [
             torch.ones_like(dec_conditions) * 0, 
             torch.ones_like(dec_conditions) * 1, 
             torch.ones_like(dec_conditions) * 2, 
-            torch.ones_like(dec_conditions) * 3
+            # torch.ones_like(dec_conditions) * 3
         ]
         plt.figure(figsize=(10, 8))
         for i, enc_conditions in enumerate(enc_cond_list):
-            reconstructions = model.run(images, enc_conditions, dec_conditions, raw=raw)
+            if "BIG" in ckpt_path:
+                reconstructions = model.run(images, enc_conditions, dec_conditions, raw=raw)
+            else:
+                reconstructions = model.run(images, classes, enc_conditions, dec_conditions, raw=raw)
             for j in range(reconstructions.shape[0]):
                 image_plt = make_plottable(images[j])
                 reconstruction_plt = make_plottable(reconstructions[j])
