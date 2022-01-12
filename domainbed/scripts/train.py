@@ -187,7 +187,8 @@ if __name__ == "__main__":
         for i, (env, env_weights) in enumerate(uda_splits)
         if i in args.test_envs]
 
-    eval_loaders = [FastDataLoader(
+    # eval_loaders = [FastDataLoader(
+    eval_loaders = [InfiniteDataLoader(
         dataset=env,
         batch_size=64,
         num_workers=dataset.N_WORKERS)
