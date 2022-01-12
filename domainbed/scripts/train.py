@@ -355,7 +355,7 @@ if __name__ == "__main__":
                             plt.xticks([])
                             plt.yticks([])
                             plt.imshow(reconstruction_plt)
-                        plt.savefig(os.path.join(args.output_dir, f"train_{cond_dict[i]}.png"))
+                        plt.savefig(os.path.join(args.output_dir, f"images/train_{cond_dict[i]}.png"))
                         plt.close()
 
                     for i, batch in enumerate(next(eval_minibatches_iterator)):
@@ -377,7 +377,7 @@ if __name__ == "__main__":
                             plt.xticks([])
                             plt.yticks([])
                             plt.imshow(reconstruction_plt)
-                        plt.savefig(os.path.join(args.output_dir, f"eval_{eval_cond_dict[i]}.png"))
+                        plt.savefig(os.path.join(args.output_dir, f"images/eval_{eval_cond_dict[i]}.png"))
                         plt.close()
 
         progress_bar.set_description("Loss: {:0.2f}".format(np.mean(train_loss)))
