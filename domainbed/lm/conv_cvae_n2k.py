@@ -331,7 +331,7 @@ class Decoder(torch.nn.Module):
             torch.nn.BatchNorm2d(num_features=16384),
             torch.nn.LeakyReLU(),
             torch.nn.Dropout2d(p=0.5),
-            torch.nn.ConvTranspose2d(in_channels=16384, out_channels=8192, kernel_size=3, padding=2, bias=False),
+            torch.nn.ConvTranspose2d(in_channels=16384, out_channels=8192, kernel_size=3, padding=0, bias=False),
             torch.nn.BatchNorm2d(num_features=8192),
             torch.nn.LeakyReLU(),
             torch.nn.Dropout2d(p=0.5),  # (N, 8192, 3, 3)
@@ -339,7 +339,7 @@ class Decoder(torch.nn.Module):
             torch.nn.BatchNorm2d(num_features=8192),
             torch.nn.LeakyReLU(),
             torch.nn.Dropout2d(p=0.5),
-            torch.nn.ConvTranspose2d(in_channels=8192, out_channels=4096, kernel_size=3, padding=2, bias=False),
+            torch.nn.ConvTranspose2d(in_channels=8192, out_channels=4096, kernel_size=3, padding=0, bias=False),
             torch.nn.BatchNorm2d(num_features=4096),
             torch.nn.LeakyReLU(),
             torch.nn.Dropout2d(p=0.5),  # (N, 4096, 5, 5)
@@ -347,7 +347,7 @@ class Decoder(torch.nn.Module):
             torch.nn.BatchNorm2d(num_features=4096),
             torch.nn.LeakyReLU(),
             torch.nn.Dropout2d(p=0.5),
-            torch.nn.ConvTranspose2d(in_channels=4096, out_channels=2048, kernel_size=3, padding=2, bias=False),
+            torch.nn.ConvTranspose2d(in_channels=4096, out_channels=2048, kernel_size=3, padding=0, bias=False),
             torch.nn.BatchNorm2d(num_features=2048),
             torch.nn.LeakyReLU(),
             torch.nn.Dropout2d(p=0.5),  # (N, 2048, 7, 7)
