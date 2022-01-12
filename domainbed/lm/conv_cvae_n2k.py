@@ -327,31 +327,30 @@ class Decoder(torch.nn.Module):
         self.linear = torch.nn.Linear(1024 + self.num_classes + self.num_domains, 16384)
         self.reshape = lambda x : x.view(-1, 16384, 1, 1)
         self.conv_sequential = torch.nn.Sequential(
-            torch.nn.Conv2d(in_channels=16384, out_channels=16384, kernel_size=3, padding=1, bias=False),
+            torch.nn.ConvTranspose2d(in_channels=16384, out_channels=16384, kernel_size=3, padding=1, bias=False),
             torch.nn.BatchNorm2d(num_features=16384),
             torch.nn.LeakyReLU(),
             torch.nn.Dropout2d(p=0.5),
-            torch.nn.Conv2d(in_channels=16384, out_channels=8192, kernel_size=3, padding=2, bias=False),
+            torch.nn.ConvTranspose2d(in_channels=16384, out_channels=8192, kernel_size=3, padding=2, bias=False),
             torch.nn.BatchNorm2d(num_features=8192),
             torch.nn.LeakyReLU(),
             torch.nn.Dropout2d(p=0.5),  # (N, 8192, 3, 3)
-            torch.nn.Conv2d(in_channels=8192, out_channels=8192, kernel_size=3, padding=1, bias=False),
+            torch.nn.ConvTranspose2d(in_channels=8192, out_channels=8192, kernel_size=3, padding=1, bias=False),
             torch.nn.BatchNorm2d(num_features=8192),
             torch.nn.LeakyReLU(),
             torch.nn.Dropout2d(p=0.5),
-            torch.nn.Conv2d(in_channels=8192, out_channels=4096, kernel_size=3, padding=2, bias=False),
+            torch.nn.ConvTranspose2d(in_channels=8192, out_channels=4096, kernel_size=3, padding=2, bias=False),
             torch.nn.BatchNorm2d(num_features=4096),
             torch.nn.LeakyReLU(),
             torch.nn.Dropout2d(p=0.5),  # (N, 4096, 5, 5)
-            torch.nn.Conv2d(in_channels=4096, out_channels=4096, kernel_size=3, padding=1, bias=False),
+            torch.nn.ConvTranspose2d(in_channels=4096, out_channels=4096, kernel_size=3, padding=1, bias=False),
             torch.nn.BatchNorm2d(num_features=4096),
             torch.nn.LeakyReLU(),
             torch.nn.Dropout2d(p=0.5),
-            torch.nn.Conv2d(in_channels=4096, out_channels=2048, kernel_size=3, padding=2, bias=False),
+            torch.nn.ConvTranspose2d(in_channels=4096, out_channels=2048, kernel_size=3, padding=2, bias=False),
             torch.nn.BatchNorm2d(num_features=2048),
             torch.nn.LeakyReLU(),
             torch.nn.Dropout2d(p=0.5),  # (N, 2048, 7, 7)
-
             torch.nn.Upsample(scale_factor=2, mode="nearest"),
             torch.nn.ConvTranspose2d(in_channels=2048, out_channels=2048, kernel_size=3, padding=1, bias=False),  # (N, 2048, 14, 14)
             torch.nn.BatchNorm2d(num_features=2048),
