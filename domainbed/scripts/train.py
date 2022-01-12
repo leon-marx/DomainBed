@@ -336,6 +336,9 @@ if __name__ == "__main__":
                     best_loss = results['loss']
                     save_checkpoint(f'best_model.pkl')
 
+                    if not os.path.exists(os.path.join(args.output_dir, f"images")):
+                        os.makedirs(os.path.join(args.output_dir, f"images"))
+
                     for i, batch in enumerate(next(train_minibatches_iterator)):
                         images = batch[0]["image"][:4].to(device)
                         classes = batch[1][:4].to(device)
