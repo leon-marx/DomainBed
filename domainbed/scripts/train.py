@@ -329,6 +329,7 @@ if __name__ == "__main__":
                 save_checkpoint(f'model_step{step}.pkl')
             if (args.save_best_every_checkpoint) and (step > 0):
                 if results["loss"] < best_loss:
+                    print("")
                     print(f"new record at step: {step}")
                     print(f"old best: {best_loss}")
                     print(f"new best: {results['loss']}")
@@ -355,6 +356,7 @@ if __name__ == "__main__":
                             plt.yticks([])
                             plt.imshow(reconstruction_plt)
                         plt.savefig(os.path.join(args.output_dir, f"train_{cond_dict[i]}.png"))
+                        plt.close()
 
                     for i, batch in enumerate(next(eval_minibatches_iterator)):
                         images = batch[0]["image"][:4].to(device)
@@ -376,6 +378,7 @@ if __name__ == "__main__":
                             plt.yticks([])
                             plt.imshow(reconstruction_plt)
                         plt.savefig(os.path.join(args.output_dir, f"eval_{eval_cond_dict[i]}.png"))
+                        plt.close()
 
         progress_bar.set_description("Loss: {:0.2f}".format(np.mean(train_loss)))
 
