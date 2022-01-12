@@ -334,8 +334,8 @@ if __name__ == "__main__":
                         fig = plt.figure(figsize=(16, 8))
                         fig.suptitle(cond_dict[i], fontsize=24)
                         for j in range(reconstructions.shape[0]):
-                            image_plt = images[j].permute(1, 2, 0)
-                            reconstruction_plt = reconstructions[j].permute(1, 2, 0)
+                            image_plt = images[j].permute(1, 2, 0).cpu()
+                            reconstruction_plt = reconstructions[j].permute(1, 2, 0).cpu()
                             plt.subplot(2, 4, 1+j)
                             plt.xticks([])
                             plt.yticks([])
@@ -355,8 +355,8 @@ if __name__ == "__main__":
                         fig = plt.figure(figsize=(16, 8))
                         fig.suptitle(cond_dict[i], fontsize=24)
                         for j in range(reconstructions.shape[0]):
-                            image_plt = images[j].permute(1, 2, 0)
-                            reconstruction_plt = reconstructions[j].permute(1, 2, 0)
+                            image_plt = images[j].permute(1, 2, 0).cpu()
+                            reconstruction_plt = reconstructions[j].permute(1, 2, 0).cpu()
                             plt.subplot(2, 4, 1+j)
                             plt.xticks([])
                             plt.yticks([])
