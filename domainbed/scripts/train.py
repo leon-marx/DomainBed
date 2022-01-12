@@ -244,6 +244,14 @@ if __name__ == "__main__":
             2: "photo",
             3: "sketch",
         }
+    eval_cond_dict = {
+            0: "art_painting_id",
+            1: "cartoon_id",
+            2: "photo_id",
+            3: "art_painting_ood",
+            4: "cartoon_ood",
+            5: "photo_ood",
+        }
     if args.save_best_every_checkpoint:
         best_loss = np.inf
     for step in progress_bar:
@@ -353,7 +361,7 @@ if __name__ == "__main__":
                         dec_conditions = batch[0]["domain"][:4].to(device)
                         reconstructions = algorithm.run(images, classes, enc_conditions, dec_conditions, raw=True)
                         fig = plt.figure(figsize=(16, 8))
-                        fig.suptitle(cond_dict[i], fontsize=24)
+                        fig.suptitle(eval_cond_dict[i], fontsize=24)
                         for j in range(reconstructions.shape[0]):
                             image_plt = images[j].permute(1, 2, 0).cpu()
                             reconstruction_plt = reconstructions[j].permute(1, 2, 0).cpu()
@@ -365,7 +373,7 @@ if __name__ == "__main__":
                             plt.xticks([])
                             plt.yticks([])
                             plt.imshow(reconstruction_plt)
-                        plt.savefig(os.path.join(args.output_dir, f"eval_{cond_dict[i]}.png"))
+                        plt.savefig(os.path.join(args.output_dir, f"eval_{eval_cond_dict[i]}.png"))
 
         progress_bar.set_description("Loss: {:0.2f}".format(np.mean(train_loss)))
 
