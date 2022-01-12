@@ -10,6 +10,7 @@ import time
 import uuid
 
 import numpy as np
+import matplotlib.pyplot as plt
 import PIL
 import torch
 import torchvision
@@ -205,11 +206,13 @@ if __name__ == "__main__":
                                 len(dataset) - len(args.test_envs), hparams)
 
     if algorithm_dict is not None:
-        algorithm.load_state_dict(algorithm_dict)
+        print("Tried to load state dict -> CORRUPTED!")
+        # algorithm.load_state_dict(algorithm_dict)
 
     algorithm.to(device)
 
     train_minibatches_iterator = zip(*train_loaders)
+    eval_minibatches_iterator = zip(*eval_loaders)
     uda_minibatches_iterator = zip(*uda_loaders)
     checkpoint_vals = collections.defaultdict(lambda: [])
 
@@ -235,6 +238,12 @@ if __name__ == "__main__":
     last_results_keys = None
     progress_bar = tqdm(range(start_step, n_steps))
     train_loss = [0 for i in range(10)]
+    cond_dict = {
+            0: "art_painting",
+            1: "cartoon",
+            2: "photo",
+            3: "sketch",
+        }
     if args.save_best_every_checkpoint:
         best_loss = np.inf
     for step in progress_bar:
@@ -288,10 +297,10 @@ if __name__ == "__main__":
 
             results_keys = sorted(results.keys())
             if results_keys != last_results_keys:
-                misc.print_row(results_keys, colwidth=12)
+                # misc.print_row(results_keys, colwidth=12)
                 last_results_keys = results_keys
-            misc.print_row([results[key] for key in results_keys],
-                           colwidth=12)
+            # misc.print_row([results[key] for key in results_keys],
+            #                colwidth=12)
 
             results.update({
                 'hparams': hparams,
@@ -310,10 +319,54 @@ if __name__ == "__main__":
                 save_checkpoint(f'model_step{step}.pkl')
             if (args.save_best_every_checkpoint) and (step > 0):
                 if results["loss"] < best_loss:
+                    print(f"new record at step: {step}")
                     print(f"old best: {best_loss}")
                     print(f"new best: {results['loss']}")
                     best_loss = results['loss']
                     save_checkpoint(f'best_model.pkl')
+
+                    for i, batch in enumerate(next(train_minibatches_iterator)):
+                        images = batch[0]["image"][:4].to(device)
+                        classes = batch[1][:4].to(device)
+                        enc_conditions = batch[0]["domain"][:4].to(device)
+                        dec_conditions = batch[0]["domain"][:4].to(device)
+                        reconstructions = algorithm.run(images, classes, enc_conditions, dec_conditions, raw=True)
+                        fig = plt.figure(figsize=(16, 8))
+                        fig.suptitle(cond_dict[i], fontsize=24)
+                        for j in range(reconstructions.shape[0]):
+                            image_plt = images[j].permute(1, 2, 0)
+                            reconstruction_plt = reconstructions[j].permute(1, 2, 0)
+                            plt.subplot(2, 4, 1+j)
+                            plt.xticks([])
+                            plt.yticks([])
+                            plt.imshow(image_plt)
+                            plt.subplot(2, 4, 5+j)
+                            plt.xticks([])
+                            plt.yticks([])
+                            plt.imshow(reconstruction_plt)
+                        plt.savefig(os.path.join(args.output_dir, f"train_{cond_dict[i]}.png"))
+
+                    for i, batch in enumerate(next(eval_minibatches_iterator)):
+                        images = batch[0]["image"][:4].to(device)
+                        classes = batch[1][:4].to(device)
+                        enc_conditions = batch[0]["domain"][:4].to(device)
+                        dec_conditions = batch[0]["domain"][:4].to(device)
+                        reconstructions = algorithm.run(images, classes, enc_conditions, dec_conditions, raw=True)
+                        fig = plt.figure(figsize=(16, 8))
+                        fig.suptitle(cond_dict[i], fontsize=24)
+                        for j in range(reconstructions.shape[0]):
+                            image_plt = images[j].permute(1, 2, 0)
+                            reconstruction_plt = reconstructions[j].permute(1, 2, 0)
+                            plt.subplot(2, 4, 1+j)
+                            plt.xticks([])
+                            plt.yticks([])
+                            plt.imshow(image_plt)
+                            plt.subplot(2, 4, 5+j)
+                            plt.xticks([])
+                            plt.yticks([])
+                            plt.imshow(reconstruction_plt)
+                        plt.savefig(os.path.join(args.output_dir, f"eval_{cond_dict[i]}.png"))
+
         progress_bar.set_description("Loss: {:0.2f}".format(np.mean(train_loss)))
 
     save_checkpoint('model.pkl')

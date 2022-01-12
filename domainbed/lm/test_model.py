@@ -1,4 +1,5 @@
 import argparse
+from shutil import Error
 import matplotlib.pyplot as plt
 import os
 import torch
@@ -8,6 +9,7 @@ from domainbed.lm.cvae import LM_CVAE
 from domainbed.lm.conv_cvae import LM_CCVAE
 from domainbed.lm.conv_cvae_s import LM_CCVAE_S
 from domainbed.lm.conv_cvae_n import LM_CCVAE_N
+from domainbed.lm.conv_cvae_nc import LM_CCVAE_NC
 from domainbed.lm.big_ccvae import BIG_LM_CCVAE
 from domainbed.lm.dataset import LM_PACS
 from domainbed.lib.fast_data_loader import FastDataLoader
@@ -57,8 +59,12 @@ elif "DB_CCVAE_S_" in ckpt_path:
 elif "DB_CCVAE_N_" in ckpt_path:
     model = LM_CCVAE_N(input_shape=input_shape, num_classes=num_classes,
                     num_domains=num_domains, hparams=hparams)
+elif "DB_CCVAE_NC_" in ckpt_path:
+    model = LM_CCVAE_NC(input_shape=input_shape, num_classes=num_classes,
+                    num_domains=num_domains, hparams=hparams)
 else:
     print("Standart CCVAE")
+    raise Error
     model = LM_CCVAE(input_shape=input_shape, num_classes=num_classes,
                     num_domains=num_domains, hparams=hparams)
 
