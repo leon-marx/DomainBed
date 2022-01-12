@@ -190,9 +190,10 @@ if __name__ == "__main__":
     # eval_loaders = [FastDataLoader(
     eval_loaders = [InfiniteDataLoader(
         dataset=env,
-        batch_size=64,
+        weights=env_weights,
+        batch_size=hparams['batch_size'],
         num_workers=dataset.N_WORKERS)
-        for env, _ in (in_splits + out_splits + uda_splits)]
+        for i, (env, env_weights) in (in_splits + out_splits + uda_splits)]
     eval_weights = [None for _, weights in (
         in_splits + out_splits + uda_splits)]
     eval_loader_names = ['env{}_in'.format(i)
@@ -292,14 +293,14 @@ if __name__ == "__main__":
             for key, val in checkpoint_vals.items():
                 results[key] = np.mean(val)
 
-            evals = zip(eval_loader_names, eval_loaders, eval_weights)
-            for name, loader, weights in evals:
-                if "LM" in args.algorithm:
-                    # acc = lm_misc.accuracy(algorithm, loader, weights, device)
-                    acc = None
-                else:
-                    acc = misc.accuracy(algorithm, loader, weights, device)
-                results[name+'_acc'] = acc
+            # evals = zip(eval_loader_names, eval_loaders, eval_weights)
+            # for name, loader, weights in evals:
+            #     if "LM" in args.algorithm:
+            #         # acc = lm_misc.accuracy(algorithm, loader, weights, device)
+            #         acc = None
+            #     else:
+            #         acc = misc.accuracy(algorithm, loader, weights, device)
+            #     results[name+'_acc'] = acc
 
             results['mem_gb'] = torch.cuda.max_memory_allocated() / \
                 (1024.*1024.*1024.)
