@@ -26,7 +26,7 @@ from domainbed.lm.conv_cvae import LM_CCVAE
 from domainbed.lm.big_ccvae import BIG_LM_CCVAE
 from domainbed.lm.conv_cvae_s import LM_CCVAE_S
 from domainbed.lm.conv_cvae_n import LM_CCVAE_N
-from domainbed.lm.conv_cvae_n_2k import LM_CCVAE_N_2k
+from domainbed.lm.conv_cvae_n2k import LM_CCVAE_N2k
 
 
 ALGORITHMS = [
@@ -57,7 +57,7 @@ ALGORITHMS = [
     "BIG_LM_CCVAE",
     "LM_CCVAE_S",
     "LM_CCVAE_N",
-    "LM_CCVAE_N_2k",
+    "LM_CCVAE_N2k",
 ]
 
 

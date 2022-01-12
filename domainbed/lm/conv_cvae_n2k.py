@@ -27,7 +27,7 @@ class Algorithm(torch.nn.Module):
         raise NotImplementedError
 
 
-class LM_CCVAE_N_2k(Algorithm):
+class LM_CCVAE_N2k(Algorithm):
     def __init__(self, input_shape, num_classes, num_domains, hparams):
         """
         Initializes the conditional variational autoencoder.
@@ -260,30 +260,38 @@ class Encoder(torch.nn.Module):
             torch.nn.LeakyReLU(),
             torch.nn.Dropout2d(p=0.5),
             torch.nn.MaxPool2d(kernel_size=2),  # (N, 2048, 7, 7)
-            torch.nn.Conv2d(in_channels=2048, out_channels=1024, kernel_size=3, padding=1, bias=False),
-            torch.nn.BatchNorm2d(num_features=1024),
+            torch.nn.Conv2d(in_channels=2048, out_channels=4096, kernel_size=3, padding=0, bias=False),
+            torch.nn.BatchNorm2d(num_features=4096),
             torch.nn.LeakyReLU(),
             torch.nn.Dropout2d(p=0.5),
-            torch.nn.Conv2d(in_channels=1024, out_channels=1024, kernel_size=3, padding=1, bias=False),
-            torch.nn.BatchNorm2d(num_features=1024),
+            torch.nn.Conv2d(in_channels=4096, out_channels=4096, kernel_size=3, padding=1, bias=False),
+            torch.nn.BatchNorm2d(num_features=4096),
+            torch.nn.LeakyReLU(),
+            torch.nn.Dropout2d(p=0.5),  # (N, 4096, 5, 5)
+            torch.nn.Conv2d(in_channels=4096, out_channels=8192, kernel_size=3, padding=0, bias=False),
+            torch.nn.BatchNorm2d(num_features=8192),
             torch.nn.LeakyReLU(),
             torch.nn.Dropout2d(p=0.5),
-            torch.nn.Conv2d(in_channels=1024, out_channels=512, kernel_size=3, padding=1, bias=False),
-            torch.nn.BatchNorm2d(num_features=512),
+            torch.nn.Conv2d(in_channels=8192, out_channels=8192, kernel_size=3, padding=1, bias=False),
+            torch.nn.BatchNorm2d(num_features=8192),
+            torch.nn.LeakyReLU(),
+            torch.nn.Dropout2d(p=0.5),  # (N, 8192, 3, 3)
+            torch.nn.Conv2d(in_channels=8192, out_channels=16384, kernel_size=3, padding=0, bias=False),
+            torch.nn.BatchNorm2d(num_features=16384),
             torch.nn.LeakyReLU(),
             torch.nn.Dropout2d(p=0.5),
-            torch.nn.Conv2d(in_channels=512, out_channels=512, kernel_size=3, padding=1, bias=False),
-            torch.nn.BatchNorm2d(num_features=512),
+            torch.nn.Conv2d(in_channels=16384, out_channels=16384, kernel_size=3, padding=1, bias=False),
+            torch.nn.BatchNorm2d(num_features=16384),
             torch.nn.LeakyReLU(),
-            torch.nn.Dropout2d(p=0.5),
+            torch.nn.Dropout2d(p=0.5),  # (N, 16384, 1, 1)
         )
         self.flatten = torch.nn.Flatten()
         self.get_mu = torch.nn.Sequential(
-            torch.nn.Linear(25088, 2048),
+            torch.nn.Linear(16384, 1024),
             torch.nn.Tanh()
         )
         self.get_logvar = torch.nn.Sequential(
-            torch.nn.Linear(25088, 2048),
+            torch.nn.Linear(16384, 1024),
             torch.nn.Tanh()
         )
     def forward(self, images, classes, domains):
@@ -316,65 +324,74 @@ class Decoder(torch.nn.Module):
         super().__init__()
         self.num_classes = num_classes
         self.num_domains = num_domains
-        self.linear = torch.nn.Linear(2048 + self.num_classes + self.num_domains, 25088)
-        self.reshape = lambda x : x.view(-1, 512, 7, 7)
+        self.linear = torch.nn.Linear(1024 + self.num_classes + self.num_domains, 16384)
+        self.reshape = lambda x : x.view(-1, 16384, 1, 1)
         self.conv_sequential = torch.nn.Sequential(
-            torch.nn.ConvTranspose2d(in_channels=512, out_channels=512, kernel_size=3, padding=1, bias=False),
-            torch.nn.BatchNorm2d(num_features=512),
+            torch.nn.Conv2d(in_channels=16384, out_channels=16384, kernel_size=3, padding=1, bias=False),
+            torch.nn.BatchNorm2d(num_features=16384),
             torch.nn.LeakyReLU(),
             torch.nn.Dropout2d(p=0.5),
-            torch.nn.ConvTranspose2d(in_channels=512, out_channels=1024, kernel_size=3, padding=1, bias=False),
-            torch.nn.BatchNorm2d(num_features=1024),
+            torch.nn.Conv2d(in_channels=16384, out_channels=8192, kernel_size=3, padding=2, bias=False),
+            torch.nn.BatchNorm2d(num_features=8192),
+            torch.nn.LeakyReLU(),
+            torch.nn.Dropout2d(p=0.5),  # (N, 8192, 3, 3)
+            torch.nn.Conv2d(in_channels=8192, out_channels=8192, kernel_size=3, padding=1, bias=False),
+            torch.nn.BatchNorm2d(num_features=8192),
             torch.nn.LeakyReLU(),
             torch.nn.Dropout2d(p=0.5),
-            torch.nn.ConvTranspose2d(in_channels=1024, out_channels=1024, kernel_size=3, padding=1, bias=False),
-            torch.nn.BatchNorm2d(num_features=1024),
+            torch.nn.Conv2d(in_channels=8192, out_channels=4096, kernel_size=3, padding=2, bias=False),
+            torch.nn.BatchNorm2d(num_features=4096),
+            torch.nn.LeakyReLU(),
+            torch.nn.Dropout2d(p=0.5),  # (N, 4096, 5, 5)
+            torch.nn.Conv2d(in_channels=4096, out_channels=4096, kernel_size=3, padding=1, bias=False),
+            torch.nn.BatchNorm2d(num_features=4096),
             torch.nn.LeakyReLU(),
             torch.nn.Dropout2d(p=0.5),
-            torch.nn.ConvTranspose2d(in_channels=1024, out_channels=2048, kernel_size=3, padding=1, bias=False),
+            torch.nn.Conv2d(in_channels=4096, out_channels=2048, kernel_size=3, padding=2, bias=False),
             torch.nn.BatchNorm2d(num_features=2048),
             torch.nn.LeakyReLU(),
-            torch.nn.Dropout2d(p=0.5),
+            torch.nn.Dropout2d(p=0.5),  # (N, 2048, 7, 7)
+
             torch.nn.Upsample(scale_factor=2, mode="nearest"),
             torch.nn.ConvTranspose2d(in_channels=2048, out_channels=2048, kernel_size=3, padding=1, bias=False),  # (N, 2048, 14, 14)
             torch.nn.BatchNorm2d(num_features=2048),
             torch.nn.LeakyReLU(),
             torch.nn.Dropout2d(p=0.5),
-            torch.nn.ConvTranspose2d(in_channels=2048, out_channels=2048, kernel_size=3, padding=1, bias=False),
-            torch.nn.BatchNorm2d(num_features=2048),
-            torch.nn.LeakyReLU(),
-            torch.nn.Dropout2d(p=0.5),
-            torch.nn.Upsample(scale_factor=2, mode="nearest"),
-            torch.nn.ConvTranspose2d(in_channels=2048, out_channels=1024, kernel_size=3, padding=1, bias=False),  # (N, 1024, 28, 28)
-            torch.nn.BatchNorm2d(num_features=1024),
-            torch.nn.LeakyReLU(),
-            torch.nn.Dropout2d(p=0.5),
-            torch.nn.ConvTranspose2d(in_channels=1024, out_channels=1024, kernel_size=3, padding=1, bias=False),
+            torch.nn.ConvTranspose2d(in_channels=2048, out_channels=1024, kernel_size=3, padding=1, bias=False),
             torch.nn.BatchNorm2d(num_features=1024),
             torch.nn.LeakyReLU(),
             torch.nn.Dropout2d(p=0.5),
             torch.nn.Upsample(scale_factor=2, mode="nearest"),
-            torch.nn.ConvTranspose2d(in_channels=1024, out_channels=512, kernel_size=3, padding=1, bias=False),  # (N, 512, 56, 56)
-            torch.nn.BatchNorm2d(num_features=512),
+            torch.nn.ConvTranspose2d(in_channels=1024, out_channels=1024, kernel_size=3, padding=1, bias=False),  # (N, 1024, 28, 28)
+            torch.nn.BatchNorm2d(num_features=1024),
             torch.nn.LeakyReLU(),
             torch.nn.Dropout2d(p=0.5),
-            torch.nn.ConvTranspose2d(in_channels=512, out_channels=512, kernel_size=3, padding=1, bias=False),
+            torch.nn.ConvTranspose2d(in_channels=1024, out_channels=512, kernel_size=3, padding=1, bias=False),
             torch.nn.BatchNorm2d(num_features=512),
             torch.nn.LeakyReLU(),
             torch.nn.Dropout2d(p=0.5),
             torch.nn.Upsample(scale_factor=2, mode="nearest"),
-            torch.nn.ConvTranspose2d(in_channels=512, out_channels=256, kernel_size=3, padding=1, bias=False),  # (N, 256, 112, 112)
+            torch.nn.ConvTranspose2d(in_channels=512, out_channels=512, kernel_size=3, padding=1, bias=False),  # (N, 512, 56, 56)
+            torch.nn.BatchNorm2d(num_features=512),
+            torch.nn.LeakyReLU(),
+            torch.nn.Dropout2d(p=0.5),
+            torch.nn.ConvTranspose2d(in_channels=512, out_channels=256, kernel_size=3, padding=1, bias=False),
             torch.nn.BatchNorm2d(num_features=256),
             torch.nn.LeakyReLU(),
             torch.nn.Dropout2d(p=0.5),
-            torch.nn.ConvTranspose2d(in_channels=256, out_channels=256, kernel_size=3, padding=1, bias=False),
+            torch.nn.Upsample(scale_factor=2, mode="nearest"),
+            torch.nn.ConvTranspose2d(in_channels=256, out_channels=256, kernel_size=3, padding=1, bias=False),  # (N, 256, 112, 112)
             torch.nn.BatchNorm2d(num_features=256),
+            torch.nn.LeakyReLU(),
+            torch.nn.Dropout2d(p=0.5),
+            torch.nn.ConvTranspose2d(in_channels=256, out_channels=128, kernel_size=3, padding=1, bias=False),
+            torch.nn.BatchNorm2d(num_features=128),
             torch.nn.LeakyReLU(),
             torch.nn.Dropout2d(p=0.5),
         )
         self.get_mu = torch.nn.Sequential(
             torch.nn.Upsample(scale_factor=2, mode="nearest"),
-            torch.nn.ConvTranspose2d(in_channels=256, out_channels=128, kernel_size=3, padding=1, bias=False),
+            torch.nn.ConvTranspose2d(in_channels=128, out_channels=128, kernel_size=3, padding=1, bias=False),
             torch.nn.BatchNorm2d(num_features=128),
             torch.nn.LeakyReLU(),
             torch.nn.Dropout2d(p=0.5),
@@ -383,7 +400,7 @@ class Decoder(torch.nn.Module):
         )
         self.get_logvar = torch.nn.Sequential(
             torch.nn.Upsample(scale_factor=2, mode="nearest"),
-            torch.nn.ConvTranspose2d(in_channels=256, out_channels=128, kernel_size=3, padding=1, bias=False),
+            torch.nn.ConvTranspose2d(in_channels=128, out_channels=128, kernel_size=3, padding=1, bias=False),
             torch.nn.BatchNorm2d(num_features=128),
             torch.nn.LeakyReLU(),
             torch.nn.Dropout2d(p=0.5),
@@ -497,7 +514,7 @@ if __name__ == "__main__":
         y = torch.randint(low=0, high=7, size=(batch_size,))
         minibatches.append((x, y))
 
-    cvae = LM_CCVAE_N(input_shape=input_shape, num_classes=num_classes,
+    cvae = LM_CCVAE_N2k(input_shape=input_shape, num_classes=num_classes,
                    num_domains=num_train_domains, hparams=hparams)
     print(cvae)
     # step_vals = cvae.update(minibatches=minibatches)
