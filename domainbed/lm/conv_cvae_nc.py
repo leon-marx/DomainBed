@@ -237,7 +237,7 @@ class LM_CCVAE_NC(Algorithm):
                 layers.append(n)
                 ave_grads.append(p.grad.abs().mean().cpu())
                 max_grads.append(p.grad.abs().max().cpu())
-        plt.figure()
+        plt.figure(figsize=(24, 16))
         plt.bar(np.arange(len(max_grads)), max_grads, alpha=0.1, lw=1, color="c")
         plt.bar(np.arange(len(max_grads)), ave_grads, alpha=0.1, lw=1, color="b")
         plt.hlines(0, 0, len(ave_grads)+1, lw=2, color="k" )
