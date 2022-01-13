@@ -390,7 +390,7 @@ if __name__ == "__main__":
                         plt.savefig(os.path.join(args.output_dir, f"images/eval_{eval_cond_dict[i]}.png"))
                         plt.close()
 
-        progress_bar.set_description("Loss: {:0.2f}, KLD: {:0.2f}, Recon: {:0.2f}".format(np.mean(train_loss)), np.mean(train_kld), np.mean(train_recon))
+        progress_bar.set_description("Loss: {:0.2f}, KLD: {:0.2f}, Recon: {:0.2f}".format(np.mean(train_loss), np.mean(train_kld), np.mean(train_recon)))
 
     save_checkpoint('model.pkl')
 
