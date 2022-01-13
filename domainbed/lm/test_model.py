@@ -177,16 +177,17 @@ elif mode == "ae_enc_switch":
                 plt.imshow(reconstruction_plt)
         plt.show()
 elif mode == "gen":
-    codes = torch.randn(size=(4, 512))
-    conditions = torch.nn.functional.one_hot(torch.arange(4), 4)
+    codes = torch.cat((torch.zeros(size=(1, 512)), torch.randn(size=(4, 512))), dim=0)
+    conditions = torch.nn.functional.one_hot(torch.arange(3), 3)
+    classes = torch.nn.functional.one_hot(torch.arange(3), 7)
     plt.figure(figsize=(8, 8))
     for i, code in enumerate(codes):
-        reconstructions, _ = model.decoder(torch.stack((code, code, code, code), dim=0), conditions)
+        reconstructions, _ = model.decoder(torch.stack((code, code, code), dim=0), classes, conditions)
         reconstructions = reconstructions.detach().permute(0, 2, 3, 1)
         reconstructions += reconstructions.min().abs().item()
         reconstructions /= reconstructions.max().item()
-        for j in range(4):
-            plt.subplot(4, 4, 4*i+j+1)
+        for j in range(3):
+            plt.subplot(5, 3, 3*i+j+1)
             plt.title(cond_dict[j])
             plt.xticks([])
             plt.yticks([])

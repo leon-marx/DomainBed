@@ -7,7 +7,7 @@ def _define_hparam(hparams, hparam_name, default_val, random_val_fn):
     hparams[hparam_name] = (hparams, hparam_name, default_val, random_val_fn)
 
 
-def _hparams(algorithm, dataset, random_seed, hidden_sizes, K, ckpt_path, lamb):
+def _hparams(algorithm, dataset, random_seed, hidden_sizes, K, ckpt_path, lamb, latent_size):
     """
     Global registry of hyperparams. Each entry is a (default, random) tuple.
     New algorithms / networks / etc. should add entries here.
@@ -111,6 +111,7 @@ def _hparams(algorithm, dataset, random_seed, hidden_sizes, K, ckpt_path, lamb):
         hparams['K'] = (K, 1)
         hparams['ckpt_path'] = (ckpt_path, None)
         hparams['lamb'] = (lamb, 1.0)
+        hparams['latent_size'] = (latent_size, 512)
 
     # Dataset-and-algorithm-specific hparam definitions. Each block of code
     # below corresponds to exactly one hparam. Avoid nested conditionals.
@@ -160,9 +161,9 @@ def _hparams(algorithm, dataset, random_seed, hidden_sizes, K, ckpt_path, lamb):
     return hparams
 
 
-def default_hparams(algorithm, dataset, hidden_sizes=None, K=None, ckpt_path=None, lamb=None):
-    return {a: b for a, (b, c) in _hparams(algorithm, dataset, 0, hidden_sizes, K, ckpt_path, lamb).items()}
+def default_hparams(algorithm, dataset, hidden_sizes=None, K=None, ckpt_path=None, lamb=None, latent_size=None):
+    return {a: b for a, (b, c) in _hparams(algorithm, dataset, 0, hidden_sizes, K, ckpt_path, lamb, latent_size).items()}
 
 
-def random_hparams(algorithm, dataset, seed, hidden_sizes=None, K=None, ckpt_path=None, lamb=None):
-    return {a: c for a, (b, c) in _hparams(algorithm, dataset, seed, hidden_sizes, K, ckpt_path, lamb).items()}
+def random_hparams(algorithm, dataset, seed, hidden_sizes=None, K=None, ckpt_path=None, lamb=None, latent_size=None):
+    return {a: c for a, (b, c) in _hparams(algorithm, dataset, seed, hidden_sizes, K, ckpt_path, lamb, latent_size).items()}

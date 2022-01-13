@@ -59,6 +59,7 @@ if __name__ == "__main__":
     parser.add_argument('--lamb', type=float, default=1.0)
     parser.add_argument('--lr', type=float, default=None)
     parser.add_argument('--batch_size', type=int, default=None)
+    parser.add_argument('--latent_size', type=int, default=None)
     parser.add_argument('--save_best_every_checkpoint', action='store_true')
 
     args = parser.parse_args()
@@ -94,10 +95,10 @@ if __name__ == "__main__":
     else:
         if args.hparams_seed == 0:
             hparams = hparams_registry.default_hparams(
-                args.algorithm, args.dataset, hidden_sizes=args.hidden_sizes, K = args.K, ckpt_path=args.ckpt_path, lamb=args.lamb)
+                args.algorithm, args.dataset, hidden_sizes=args.hidden_sizes, K = args.K, ckpt_path=args.ckpt_path, lamb=args.lamb, latent_size=args.latent_size)
         else:
             hparams = hparams_registry.random_hparams(args.algorithm, args.dataset, misc.seed_hash(
-                args.hparams_seed, args.trial_seed), hidden_sizes=args.hidden_sizes, K = args.K, ckpt_path=args.ckpt_path, lamb=args.lamb)
+                args.hparams_seed, args.trial_seed), hidden_sizes=args.hidden_sizes, K = args.K, ckpt_path=args.ckpt_path, lamb=args.lamb, latent_size=args.latent_size)
 
     if args.hparams:
         hparams.update(json.loads(args.hparams))
@@ -240,6 +241,8 @@ if __name__ == "__main__":
     last_results_keys = None
     progress_bar = tqdm(range(start_step, n_steps))
     train_loss = [0 for i in range(10)]
+    train_kld = [0 for i in range(10)]
+    train_recon = [0 for i in range(10)]
     cond_dict = {
             0: "art_painting",
             1: "cartoon",
@@ -274,9 +277,13 @@ if __name__ == "__main__":
         else:
             uda_device = None
         if "LM" in args.dataset:
-            step_vals, step_train_loss = algorithm.update(minibatches_device, uda_device, return_train_loss=True)
+            step_vals, step_train_loss, step_train_kld, step_train_recon = algorithm.update(minibatches_device, uda_device, return_train_loss=True, split_loss=True, output_dir=args.output_dir)
             train_loss.pop(0)
             train_loss.append(step_train_loss)
+            train_kld.pop(0)
+            train_kld.append(step_train_kld)
+            train_recon.pop(0)
+            train_recon.append(step_train_recon)
         else:
             step_vals = algorithm.update(minibatches_device, uda_device)
         checkpoint_vals['step_time'].append(time.time() - step_start_time)
@@ -383,7 +390,7 @@ if __name__ == "__main__":
                         plt.savefig(os.path.join(args.output_dir, f"images/eval_{eval_cond_dict[i]}.png"))
                         plt.close()
 
-        progress_bar.set_description("Loss: {:0.2f}".format(np.mean(train_loss)))
+        progress_bar.set_description("Loss: {:0.2f}, KLD: {:0.2f}, Recon: {:0.2f}".format(np.mean(train_loss)), np.mean(train_kld), np.mean(train_recon))
 
     save_checkpoint('model.pkl')
 

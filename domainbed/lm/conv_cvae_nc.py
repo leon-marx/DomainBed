@@ -1,4 +1,6 @@
 import torch
+import matplotlib.pyplot as plt
+import os
 
 
 class Algorithm(torch.nn.Module):
@@ -38,6 +40,7 @@ class LM_CCVAE_NC(Algorithm):
         hparams: {"K": int, number of samples generated for training,
                   "ckpt_path": str, checkpoint path to load model from,
                   "lamb": float, weight for the reconstruction part of the ELBO Loss,
+                  "latent_size": int, size of the latent space
                   ...}
         """
         super().__init__(input_shape, num_classes, num_domains, hparams)
@@ -49,10 +52,11 @@ class LM_CCVAE_NC(Algorithm):
         self.K = self.hparams["K"]
         self.ckpt_path = self.hparams["ckpt_path"]
         self.lamb = self.hparams["lamb"]
+        self.latent_size = self.hparams["latent_size"]
 
         self.input_size = int(torch.prod(torch.Tensor(input_shape)).item())
-        self.encoder = Encoder(num_classes=self.num_classes, num_domains=self.num_domains)
-        self.decoder = Decoder(num_classes=self.num_classes, num_domains=self.num_domains)
+        self.encoder = Encoder(num_classes=self.num_classes, num_domains=self.num_domains, latent_size=self.latent_size)
+        self.decoder = Decoder(num_classes=self.num_classes, num_domains=self.num_domains, latent_size=self.latent_size)
         self.loss = ELBOLoss()
         self.optimizer = torch.optim.Adam(
             self.parameters(),
@@ -64,7 +68,7 @@ class LM_CCVAE_NC(Algorithm):
             self.init_from_ckpt(self.ckpt_path)
 
 
-    def update(self, minibatches, unlabeled=None, return_train_loss=False):
+    def update(self, minibatches, unlabeled=None, return_train_loss=False, split_loss=False, output_dir=None):
         """
         Calculates the loss for the given set of minibatches.
 
@@ -76,6 +80,8 @@ class LM_CCVAE_NC(Algorithm):
                 corresponds to int d = 0,...,6 (class)
         unlabeled: This is not supported!
         return_train_loss: If True, returns loss as 2nd value (to display in progress bar)
+        split_loss: If True, returns separate kld- and reconstruction-loss
+        output_dir: string containing relative path to output directory for grad_flow plot
         """
         images = torch.cat([x["image"] for x, y in minibatches]) # (batch_size, channels, height, width)
         classes = torch.nn.functional.one_hot(torch.cat([y for x, y in minibatches]), num_classes=self.num_classes).flatten(start_dim=1) # (batch_size, num_classes)
@@ -89,23 +95,34 @@ class LM_CCVAE_NC(Algorithm):
         else:
             dec_mu, dec_logvar = self.decoder.forward(z, classes, domains)
 
-        loss = self.loss(images, enc_mu, enc_logvar, dec_mu, dec_logvar, lamb=self.lamb)
+        if split_loss:
+            loss, kld, recon = self.loss(images, enc_mu, enc_logvar, dec_mu, dec_logvar, lamb=self.lamb, split_loss=True)
+        else:
+            loss = self.loss(images, enc_mu, enc_logvar, dec_mu, dec_logvar, lamb=self.lamb)
 
         self.optimizer.zero_grad()
         loss.backward()
+        if output_dir is not None:
+            self.plot_grad_flow(output_dir)
         self.optimizer.step()
 
         if return_train_loss:
-            return {'loss': loss.item()}, loss.item()
+            if split_loss:
+                return {'loss': loss.item()}, loss.item(), kld.item(), recon.item()
+            else:
+                return {'loss': loss.item()}, loss.item()
         else:
-            return {'loss': loss.item()}
+            if split_loss:                
+                return {'loss': loss.item()}, kld.item(), recon.item()
+            else:
+                return {'loss': loss.item()}
 
     def evaluate(self, minibatches, unlabeled=None, return_eval_loss=False):
         """
         Calculates the loss for the given set of minibatches.
 
         minibatches: List of tuples [(x, y)]
-            x: {"image": Tensor of shape (batch_size, channles, height, width),
+            x: {"image": Tensor of shape (batch_size, channels, height, width),
                 "domain": Tensor of shape (batch_size, 1)}
                     The 1 corresponds to int d = 0,...,3 (domain)
             y: Tensor of shape (batch_size, 1)
@@ -202,18 +219,39 @@ class LM_CCVAE_NC(Algorithm):
         if len(unexpected) > 0:
             print(f"Unexpected keys in state dict: {unexpected}")
 
+    def plot_grad_flow(named_parameters, output_dir):
+        ave_grads = []
+        layers = []
+        for n, p in named_parameters:
+            if(p.requires_grad) and ("bias" not in n):
+                layers.append(n)
+                ave_grads.append(p.grad.abs().mean())
+        plt.figure()
+        plt.plot(ave_grads, alpha=0.3, color="b")
+        plt.hlines(0, 0, len(ave_grads)+1, linewidth=1, color="k" )
+        plt.xticks(range(0,len(ave_grads), 1), layers, rotation="vertical")
+        plt.xlim(xmin=0, xmax=len(ave_grads))
+        plt.xlabel("Layers")
+        plt.ylabel("average gradient")
+        plt.title("Gradient flow")
+        plt.grid(True)
+        plt.savefig(os.path.join(output_dir, "gradient_flow.png"))
+        plt.close()
+
 
 class Encoder(torch.nn.Module):
-    def __init__(self, num_classes, num_domains):
+    def __init__(self, num_classes, num_domains, latent_size):
         """
         Initializes the encoder.
 
         num_classes: Number of classes, usually 7
         num_domains: Number of domains, usually 4 or 3 (without sketch)
+        latent_size: int, size of the latent space
         """
         super().__init__()
         self.num_classes = num_classes
         self.num_domains = num_domains
+        self.latent_size = latent_size
         self.conv_sequential = torch.nn.Sequential(
             torch.nn.Conv2d(in_channels=3 + self.num_classes + self.num_domains, out_channels=128, kernel_size=3, padding=1, bias=False),
             torch.nn.BatchNorm2d(num_features=128),
@@ -279,11 +317,11 @@ class Encoder(torch.nn.Module):
         )
         self.flatten = torch.nn.Flatten()
         self.get_mu = torch.nn.Sequential(
-            torch.nn.Linear(6272, 512),
+            torch.nn.Linear(6272, self.latent_size),
             torch.nn.Tanh()
         )
         self.get_logvar = torch.nn.Sequential(
-            torch.nn.Linear(6272, 512),
+            torch.nn.Linear(6272, self.latent_size),
             torch.nn.Tanh()
         )
     def forward(self, images, classes, domains):
@@ -306,17 +344,18 @@ class Encoder(torch.nn.Module):
 
 
 class Decoder(torch.nn.Module):
-    def __init__(self, num_classes, num_domains):
+    def __init__(self, num_classes, num_domains, latent_size):
         """
         Initializes the decoder.
 
         num_classes: Number of classes, usually 7
         num_domains: Number of domains, usually 4 or 3 (without sketch)
+        latent_size: int, size of the latent space
         """
         super().__init__()
         self.num_classes = num_classes
         self.num_domains = num_domains
-        self.linear = torch.nn.Linear(512 + self.num_classes + self.num_domains, 6272)
+        self.linear = torch.nn.Linear(self.latent_size + self.num_classes + self.num_domains, 6272)
         self.reshape = lambda x : x.view(-1, 128, 7, 7)
         self.conv_sequential = torch.nn.Sequential(
             torch.nn.ConvTranspose2d(in_channels=128, out_channels=256, kernel_size=3, padding=1, bias=False),
@@ -438,7 +477,7 @@ class ELBOLoss(torch.nn.Module):
         super().__init__()
         self.flat_K = lambda x, N, K : x.view(N, K, -1)
 
-    def forward(self, x, enc_mu, enc_logvar, dec_mu, dec_logvar, lamb=1):
+    def forward(self, x, enc_mu, enc_logvar, dec_mu, dec_logvar, lamb=1, split_loss=False):
         """
         Calculates the ELBO Loss (negative ELBO).
 
@@ -448,6 +487,7 @@ class ELBOLoss(torch.nn.Module):
         dec_mu: Tensor of shape (batch_size, K, channels, height, width) -> K = number of samples for z
         dec_logvar: Tensor of shape (batch_size, K, channels, height, width)
         lamb: optional weighing of the reconstruction part of the ELBO Loss
+        split_loss: If True, returns separate kld- and reconstruction-loss
         """
         N = dec_mu.shape[0]
         K = dec_mu.shape[1]
@@ -458,6 +498,29 @@ class ELBOLoss(torch.nn.Module):
         x = self.flat_K(x, N, K)
         dec_mu = self.flat_K(dec_mu, N, K)
         dec_logvar = self.flat_K(dec_logvar, N, K)
+
+        if split_loss:
+            kld_loss = torch.mean(
+            # KL divergence -> regularization
+            (torch.sum(
+                enc_mu ** 2 + enc_logvar.exp() - enc_logvar - torch.ones(enc_mu.shape).to(x.device),
+                dim=1
+            ) * 0.5 * (1.0 / lamb)
+            ),
+            dim=0
+            )
+            reconstruction_loss = torch.mean(
+            # likelihood -> similarity
+            (torch.mean(
+                torch.sum(
+                    (x - dec_mu) ** 2 / (2 * dec_logvar.exp()) + 0.5 * dec_logvar,
+                    dim=2
+                ), 
+                dim=1
+            )),
+            dim=0
+            )
+            return kld_loss + reconstruction_loss, kld_loss, reconstruction_loss
 
         return torch.mean(
             # KL divergence -> regularization
@@ -488,6 +551,7 @@ if __name__ == "__main__":
                "lamb": 10,
                "weight_decay": 0.0,
                "batch_size": 2,
+               "latent_size": 512
     }
     batch_size = hparams["batch_size"]
     minibatches = []
@@ -497,7 +561,7 @@ if __name__ == "__main__":
         y = torch.randint(low=0, high=7, size=(batch_size,))
         minibatches.append((x, y))
 
-    cvae = LM_CCVAE_N(input_shape=input_shape, num_classes=num_classes,
+    cvae = LM_CCVAE_NC(input_shape=input_shape, num_classes=num_classes,
                    num_domains=num_train_domains, hparams=hparams)
     print(cvae)
     # step_vals = cvae.update(minibatches=minibatches)
