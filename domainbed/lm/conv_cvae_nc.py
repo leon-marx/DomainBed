@@ -355,6 +355,7 @@ class Decoder(torch.nn.Module):
         super().__init__()
         self.num_classes = num_classes
         self.num_domains = num_domains
+        self.latent_size = latent_size
         self.linear = torch.nn.Linear(self.latent_size + self.num_classes + self.num_domains, 6272)
         self.reshape = lambda x : x.view(-1, 128, 7, 7)
         self.conv_sequential = torch.nn.Sequential(
