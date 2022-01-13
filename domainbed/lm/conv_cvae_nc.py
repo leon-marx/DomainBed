@@ -221,7 +221,7 @@ class LM_CCVAE_NC(Algorithm):
         if len(unexpected) > 0:
             print(f"Unexpected keys in state dict: {unexpected}")
 
-    def plot_grad_flow(named_parameters, output_dir):
+    def plot_grad_flow(self, named_parameters, output_dir):
         """
         Plots the gradients flowing through different layers in the net during training.
         Can be used for checking for possible gradient vanishing / exploding problems.
