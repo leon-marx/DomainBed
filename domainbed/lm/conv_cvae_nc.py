@@ -65,8 +65,8 @@ class LM_CCVAE_NC(Algorithm):
             lr=self.hparams["lr"],
             weight_decay=self.hparams['weight_decay']
         )
-        self.ave_grads = [0 for i in range(10)]
-        self.max_grads= [0 for i in range(10)]
+        self.ave_grad_list = [[], [], [], [], [], [], [], [], [], [],]
+        self.max_grad_list = [[], [], [], [], [], [], [], [], [], [],]
 
         if self.ckpt_path is not None:
             self.init_from_ckpt(self.ckpt_path)
@@ -232,19 +232,25 @@ class LM_CCVAE_NC(Algorithm):
         "plot_grad_flow(self.model.named_parameters())" to visualize the gradient flow
         """
         layers = []
+        ave_grads = []
+        max_grads = []
         for n, p in named_parameters:
             if(p.requires_grad) and ("bias" not in n):
                 layers.append(n)
-                self.ave_grads.pop(0)
-                self.ave_grads.append(p.grad.abs().mean().cpu())
-                self.max_grads.pop(0)
-                self.max_grads.append(p.grad.abs().max().cpu())
+                ave_grads.append(p.grad.abs().mean().cpu())
+                max_grads.append(p.grad.abs().max().cpu())
+        self.ave_grad_list.pop(0)
+        self.ave_grad_list.append(ave_grads)
+        self.max_grad_list.pop(0)
+        self.max_grad_list.append(max_grads)
         plt.figure(figsize=(24, 16))
-        plt.bar(np.arange(len(self.max_grads)), self.max_grads, alpha=0.1, lw=1, color="c")
-        plt.bar(np.arange(len(self.max_grads)), self.ave_grads, alpha=0.1, lw=1, color="b")
-        plt.hlines(0, 0, len(self.ave_grads)+1, lw=2, color="k" )
-        plt.xticks(range(0,len(self.ave_grads), 1), layers, rotation="vertical")
-        plt.xlim(left=0, right=len(self.ave_grads))
+        for mg in self.max_grad_list:
+            plt.bar(np.arange(len(mg)), mg, alpha=0.1, lw=1, color="c")
+        for ag in self.ave_grad_list:
+            plt.bar(np.arange(len(ag)), ag, alpha=0.1, lw=1, color="b")
+        plt.hlines(0, 0, len(ave_grads)+1, lw=2, color="k" )
+        plt.xticks(range(0,len(ave_grads), 1), layers, rotation=45)
+        plt.xlim(left=0, right=len(ave_grads))
         plt.ylim(bottom = -0.001, top=0.02) # zoom in on the lower gradient regions
         plt.xlabel("Layers")
         plt.ylabel("average gradient")
